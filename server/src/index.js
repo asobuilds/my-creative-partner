@@ -9,6 +9,7 @@ import { meshReady } from './adapters/mesh.js';
 import { ttsReady } from './adapters/tts.js';
 import { mediaReady } from './adapters/media.js';
 import { videoReady } from './adapters/video.js';
+import mountTts from './routes/tts.js';
 
 const PORT = Number(process.env.PORT) || 5000;
 const ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
@@ -43,6 +44,7 @@ app.post('/api/command', (req, res) => {
   res.json({ ok: true });
 });
 
+mountTts(app);
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/api/stream' });
 

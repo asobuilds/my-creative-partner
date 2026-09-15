@@ -4,25 +4,16 @@ import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
 const MAX_EVENTS = 60;
 
 export const useStudioStore = create((set, get) => ({
-  /* ─────────── Node Graph ─────────── */
   nodes: [],
   edges: [],
   onNodesChange: (c) => set({ nodes: applyNodeChanges(c, get().nodes) }),
   onEdgesChange: (c) => set({ edges: applyEdgeChanges(c, get().edges) }),
   onConnect: (c) => set({ edges: addEdge({ ...c, animated: true }, get().edges) }),
   setGraph: (nodes, edges) => set({ nodes, edges }),
-
-  addNode: (node) => set({ nodes: [...get().nodes, node] }),
-
-  /** Patch a node's `data` in place — used by streaming token deltas. */
+  addNode: (node) => set((s) => (s.nodes.find((n) => n.id === node.id) ? s : { nodes: [...s.nodes, node] })),
   patchNodeData: (id, patch) =>
-    set({
-      nodes: get().nodes.map((n) =>
-        n.id === id ? { ...n, data: { ...n.data, ...patch } } : n
-      ),
-    }),
+    set((s) => ({ nodes: s.nodes.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...patch } } : n)) })),
 
-  /* ─────────── 3D Scene ─────────── */
   sceneObjects: [],
   upsertSceneObject: (obj) =>
     set((s) => {
@@ -34,9 +25,10 @@ export const useStudioStore = create((set, get) => ({
     }),
   clearScene: () => set({ sceneObjects: [] }),
 
-  /* ─────────── Runtime / UX ─────────── */
-  streamStatus: 'idle', // idle | connecting | open | retrying | closed
+  streamStatus: 'idle',
   setStreamStatus: (streamStatus) => set({ streamStatus }),
+  phase: 'idle',
+  setPhase: (phase) => set({ phase }),
 
   activeNodeId: null,
   setActiveNodeId: (activeNodeId) => set({ activeNodeId }),
@@ -44,7 +36,20 @@ export const useStudioStore = create((set, get) => ({
   events: [],
   pushEvent: (evt) => set((s) => ({ events: [evt, ...s.events].slice(0, MAX_EVENTS) })),
 
-  /* ─────────── HUD / Prompt ─────────── */
   promptInput: '',
   setPromptInput: (promptInput) => set({ promptInput }),
+
+  companion: { visible: false, text: '', streaming: false },
+  companionStart: () => set({ companion: { visible: true, text: '', streaming: true } }),
+  companionToken: (delta) =>
+    set((s) => ({ companion: { ...s.companion, visible: true, streaming: true, text: s.companion.text + delta } })),
+  companionDone: (text) =>
+    set((s) => ({ companion: { visible: true, streaming: false, text: text || s.companion.text } })),
+  companionDismiss: () => set((s) => ({ companion: { ...s.companion, visible: false } })),
+
+  voiceMuted: false,
+  toggleVoiceMuted: () => set((s) => ({ voiceMuted: !s.voiceMuted })),
+
+  mood: { primary: '#00f0ff', accent: '#3b82f6', bg: '#070b14', fog: '#070b14' },
+  setMood: (mood) => set((s) => ({ mood: { ...s.mood, ...mood } })),
 }));
