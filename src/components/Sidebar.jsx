@@ -4,7 +4,7 @@ import { Sparkles, Home, Box, Lightbulb, Trophy, MessageSquare, HelpCircle, Sett
 export default function Sidebar({ activeTab, setActiveTab, currentUser, onOpenAuth, onOpenSettings }) {
   const navItems = [
     { id: 'landing', label: 'Overview & Guide', icon: <Home size={18} /> },
-    { id: 'canvas', label: '3D Studio Canvas', icon: <Box size={18} /> },
+    { id: 'canvas', label: 'Create', icon: <Box size={18} /> },
     { id: 'inspiration', label: 'Idea Stream', icon: <Lightbulb size={18} /> },
     { id: 'leaderboard', label: 'Leaderboard', icon: <Trophy size={18} /> },
     { id: 'feedback', label: 'Feedback', icon: <MessageSquare size={18} /> },
@@ -33,8 +33,8 @@ export default function Sidebar({ activeTab, setActiveTab, currentUser, onOpenAu
             <Sparkles size={20} color="#fff" />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#00f0ff' }}>Synthetix</h1>
-            <p style={{ margin: 0, fontSize: '0.68rem', opacity: 0.7 }}>Spatial Studio OS</p>
+            <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#00f0ff' }}>WonderPal</h1>
+            <p style={{ margin: 0, fontSize: '0.68rem', opacity: 0.7 }}>Imagination Studio</p>
           </div>
         </div>
 

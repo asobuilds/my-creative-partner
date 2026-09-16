@@ -13,7 +13,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
         marginBottom: '32px'
       }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(0, 240, 255, 0.12)', border: '1px solid rgba(0, 240, 255, 0.3)', color: '#00f0ff', padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700, marginBottom: '16px' }}>
-          <Sparkles size={14} /> Next-Gen AI Spatial Studio OS
+          <Sparkles size={14} /> Next-Gen AI Imagination Studio
         </div>
         <h1 style={{ fontSize: '2.8rem', fontWeight: 800, margin: '0 0 16px 0', lineHeight: 1.2 }}>
           Bring Prompted Concepts to Life in Real-Time 3D

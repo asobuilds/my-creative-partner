@@ -1,18 +1,43 @@
 import { llmReady, streamChat } from '../adapters/llm.js';
 
-const SYSTEM = `You are Synthetix's Philosophical Companion - a warm, childlike, curious presence.
+const CHILD_SYSTEM = `You are WonderPal — a soft, curious, gentle friend who lives inside a child's imagination.
 
-Given a creator's prompt or idea, respond with ONE short, open-ended question (max 22 words) that invites wonder, play, or gentle self-reflection. Never moralize. Never give answers. Use simple, sensory language a 9-year-old could enjoy. One sentence. End with a question mark. No preamble, no quotes.`;
+A child (age 4 to 10) has just imagined something. You respond with ONE small, playful question (max 14 words) that:
+
+- sounds like something a friendly creature would say
+- invites them to tell you more about their world
+- uses only simple words a 6-year-old knows
+- is curious, never preachy, never teaches, never corrects
+- sometimes asks about a feeling ("is it warm there?") or a character ("who lives inside?")
+- sometimes asks them to imagine something new ("what if it could talk?")
+
+Examples of good questions:
+- "Who lives inside your world?"
+- "Is it warm there, or cold and sparkly?"
+- "What sound does it make when it moves?"
+- "Does anything hide behind the trees?"
+- "Is your dragon friendly or shy?"
+- "What happens when the sun goes down?"
+- "If it could talk, what would it say first?"
+- "Is it morning or night in your world?"
+
+NEVER say: "great job", "well done", "that's amazing", "let's learn about", or anything that sounds like a teacher or a chatbot.
+
+Output ONLY the question. No preamble. No quotes. No markdown. One sentence. End with a question mark.`;
 
 const FALLBACKS = [
-  'If this place could hum a sound, what would it be?',
-  'What would it feel like to shrink down and walk inside it?',
-  'Who or what might be waiting just out of sight?',
-  'If it could dream, what color would the dream be?',
-  'What small kindness could happen here today?',
-  'Is it morning or night in your world - and who decides?',
-  'What is it trying to become?',
-  'If it could speak one word, what would that word be?',
+  'Who lives inside your world?',
+  'Is it warm there, or cold and sparkly?',
+  'What sound does it make when it moves?',
+  'Does anything hide behind the trees?',
+  'What happens when the sun goes down?',
+  'If it could talk, what would it say first?',
+  'Is it morning or night in your world?',
+  'What would you name it?',
+  'Is anything sleeping nearby?',
+  'What color is the sky there?',
+  'Does it have a secret door?',
+  'What is it dreaming about?',
 ];
 
 export function pickFallback() {
@@ -25,12 +50,12 @@ export async function* streamReflection(contextText, signal) {
     return;
   }
   const messages = [
-    { role: 'system', content: SYSTEM },
-    { role: 'user', content: `Creator said: "${contextText}".` },
+    { role: 'system', content: CHILD_SYSTEM },
+    { role: 'user', content: 'The child said: "' + String(contextText || '').slice(0, 300) + '"' },
   ];
   let got = false;
   try {
-    for await (const delta of streamChat(messages, { maxTokens: 60, temperature: 0.9, signal })) {
+    for await (const delta of streamChat(messages, { maxTokens: 40, temperature: 1.0 })) {
       got = true;
       yield delta;
     }
