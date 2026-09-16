@@ -12,11 +12,13 @@
   "dependencies": {
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
-    "lucide-react": "^1.44.0",
+    "@xyflow/react": "^12.11.6",
+    "lucide-react": "^1.46.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "socket.io-client": "^4.8.3",
-    "three": "^0.186.0"
+    "three": "^0.186.0",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",

@@ -2,63 +2,64 @@ import { useEffect, useRef, useCallback } from 'react';
 import { StreamClient } from '../services/streamService';
 import { useStudioStore } from '../store/studioStore';
 
-/**
- * Wire protocol (JSON):
- *   { type: 'token',        id, delta }
- *   { type: 'node:add',     node }
- *   { type: 'node:patch',   id, data }
- *   { type: 'edge:add',     edge }
- *   { type: 'scene:upsert', object }
- *   { type: 'scene:clear' }
- *   { type: 'done',         id }
- *   { type: 'error',        message }
- */
-export function useStreamingClient({ enabled = true, path = '/api/stream' } = {}) {
+const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5000').replace(/\/$/, '');
+
+function toRenderUrl(p) {
+  if (!p) return null;
+  const idx = p.indexOf('/synthetix-renders/');
+  if (idx === -1) return null;
+  return API_BASE + '/renders/' + p.slice(idx + '/synthetix-renders/'.length);
+}
+
+export function useStreamingClient({ enabled = true, path } = {}) {
   const clientRef = useRef(null);
+  const pathResolved = path || import.meta.env.VITE_STREAM_PATH || '/api/stream';
 
   useEffect(() => {
     if (!enabled) return;
-
     const store = useStudioStore.getState;
 
     const client = new StreamClient({
-      path,
+      path: pathResolved,
       onStatus: (s) => store().setStreamStatus(s),
-      onError: (e) => store().pushEvent({ type: 'transport-error', message: String(e?.message ?? e) }),
+      onError: (e) => store().pushEvent({ type: 'transport-error', message: String((e && e.message) || e) }),
       onMessage: (msg) => {
         const s = store();
         s.pushEvent(msg);
-
         switch (msg.type) {
+          case 'phase': s.setPhase(msg.phase); break;
           case 'token': {
             const node = s.nodes.find((n) => n.id === msg.id);
-            const prev = node?.data?.streamed ?? '';
-            s.patchNodeData(msg.id, { streamed: prev + (msg.delta ?? ''), isStreaming: true });
+            const prev = (node && node.data && node.data.streamed) || '';
+            s.patchNodeData(msg.id, { streamed: prev + (msg.delta || ''), isStreaming: true });
             break;
           }
-          case 'node:add':
-            s.addNode(msg.node);
-            break;
-          case 'node:patch':
-            s.patchNodeData(msg.id, msg.data);
-            break;
+          case 'node:add': s.addNode(msg.node); break;
+          case 'node:patch': s.patchNodeData(msg.id, msg.data); break;
           case 'edge:add':
             useStudioStore.setState((prev) => ({ edges: [...prev.edges, msg.edge] }));
             break;
-          case 'scene:upsert':
-            s.upsertSceneObject(msg.object);
+          case 'scene:upsert': s.upsertSceneObject(msg.object); break;
+          case 'scene:clear': s.clearScene(); break;
+          case 'render:done':
+            useStudioStore.setState({
+              lastRender: {
+                preview: toRenderUrl(msg.preview),
+                glb: toRenderUrl(msg.glb),
+                texture: msg.texture || null,
+                ts: Date.now(),
+              },
+            });
             break;
-          case 'scene:clear':
-            s.clearScene();
-            break;
-          case 'done':
-            s.patchNodeData(msg.id, { isStreaming: false });
-            break;
+          case 'done': s.patchNodeData(msg.id, { isStreaming: false }); break;
           case 'error':
-            s.patchNodeData(msg.id ?? '', { isStreaming: false, error: msg.message });
+            if (msg.id) s.patchNodeData(msg.id, { isStreaming: false, error: msg.message });
+            s.pushEvent({ type: 'server-error', message: msg.message });
             break;
-          default:
-            break;
+          case 'companion:start': s.companionStart(); break;
+          case 'companion:token': s.companionToken(msg.delta); break;
+          case 'companion:done': s.companionDone(msg.text); break;
+          default: break;
         }
       },
     });
@@ -66,8 +67,9 @@ export function useStreamingClient({ enabled = true, path = '/api/stream' } = {}
     client.connect();
     clientRef.current = client;
     return () => client.close();
-  }, [enabled, path]);
+  }, [enabled, pathResolved]);
 
-  const send = useCallback((payload) => clientRef.current?.send(payload), []);
-  return { send };
+  const send = useCallback((payload) => clientRef.current && clientRef.current.send(payload), []);
+  const cancel = useCallback(() => clientRef.current && clientRef.current.send({ type: 'graph:cancel' }), []);
+  return { send, cancel };
 }

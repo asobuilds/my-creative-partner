@@ -9,6 +9,8 @@ import { meshReady } from './adapters/mesh.js';
 import { ttsReady } from './adapters/tts.js';
 import { mediaReady } from './adapters/media.js';
 import { videoReady } from './adapters/video.js';
+import { blenderReady } from './adapters/blender.js';
+import { higgsfieldReady } from './adapters/higgsfield.js';
 import mountTts from './routes/tts.js';
 
 const PORT = Number(process.env.PORT) || 5000;
@@ -17,6 +19,7 @@ const ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 const app = express();
 app.use(cors({ origin: ORIGIN, credentials: true }));
 app.use(express.json({ limit: '2mb' }));
+app.use('/renders', express.static(process.env.BLENDER_OUTPUT_PATH || '/tmp/synthetix-renders'));
 
 app.get('/health', (_req, res) =>
   res.json({
@@ -27,6 +30,8 @@ app.get('/health', (_req, res) =>
     tts: ttsReady,
     media: mediaReady,
     video: videoReady,
+    blender: blenderReady,
+    higgsfield: higgsfieldReady,
     uptime: process.uptime(),
   })
 );
@@ -88,5 +93,5 @@ server.listen(PORT, () => {
     + '  [llm=' + llmReady
     + ' providers=' + JSON.stringify(providerStatus)
     + ' tts=' + ttsReady
-    + ' video=' + videoReady + ']');
+    + ' video=' + videoReady + ' blender=' + blenderReady + ' hf=' + higgsfieldReady + ']');
 });

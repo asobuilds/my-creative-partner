@@ -47,6 +47,7 @@ export const useStudioStore = create((set, get) => ({
     set((s) => ({ companion: { visible: true, streaming: false, text: text || s.companion.text } })),
   companionDismiss: () => set((s) => ({ companion: { ...s.companion, visible: false } })),
 
+  lastRender: null,
   voiceMuted: false,
   toggleVoiceMuted: () => set((s) => ({ voiceMuted: !s.voiceMuted })),
 
