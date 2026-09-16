@@ -9,6 +9,8 @@ const {
 
 const isReal = (v) => Boolean(v) && !String(v).startsWith('PASTE_');
 export const higgsfieldReady = isReal(HF_API_KEY_ID) && isReal(HF_API_KEY_SECRET);
+let _hfCredits = 'unknown'; // unknown | ok | empty
+export function getHfStatus() { return { ready: higgsfieldReady, credits: _hfCredits }; }
 
 const auth = () => 'Key ' + HF_API_KEY_ID + ':' + HF_API_KEY_SECRET;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -19,7 +21,9 @@ async function submit(prompt) {
     headers: { Authorization: auth(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt }),
   });
+  if (res.status === 403) { _hfCredits = 'empty'; throw new Error('HF no credits'); }
   if (!res.ok) throw new Error('HF submit ' + res.status + ': ' + (await res.text()).slice(0, 200));
+  _hfCredits = 'ok';
   const j = await res.json();
   return j.request_id;
 }
@@ -52,6 +56,6 @@ export default function mountImage(app) {
   });
 
   app.get('/api/image/status', (_req, res) => {
-    res.json({ higgsfieldReady });
+    res.json({ ready: higgsfieldReady, credits: _hfCredits });
   });
 }

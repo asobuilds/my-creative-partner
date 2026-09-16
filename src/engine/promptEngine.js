@@ -15,6 +15,7 @@ export class PromptEngine {
     this.lastSubmitted = { text: clean, ts: now };
 
     const store = useStudioStore.getState();
+    store.addToHistory(clean);
     store.setPromptInput('');
     store.setPhase('planning');
 
@@ -23,13 +24,7 @@ export class PromptEngine {
       prompt: clean,
       source,
       graph: { nodes: store.nodes, edges: store.edges },
-      existingScene: (store.sceneObjects || []).map((o) => ({
-        id: o.id,
-        kind: o.kind,
-        color: o.color,
-        modelUrl: o.modelUrl ? 'yes' : 'no',
-        position: o.position,
-      })),
+      existingScene: store.sceneHistory,
     });
   }
 

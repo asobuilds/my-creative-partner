@@ -1,3 +1,4 @@
+import { cacheGet, cacheSet } from './cache.js';
 export const meshReady = true;
 
 const BASE = 'https://three.ws';
@@ -11,6 +12,8 @@ const POLL_MS = 1500;
 export async function generateMesh(prompt) {
   const clean = String(prompt || '').trim().slice(0, 1000);
   if (clean.length < 3) return null;
+  const cached = cacheGet('mesh', clean);
+  if (cached) { console.log('[three.ws] CACHE HIT'); return cached; }
 
   try {
     const res = await fetch(BASE + '/api/3d/generate', {
@@ -32,7 +35,7 @@ export async function generateMesh(prompt) {
     const json = await res.json();
     console.log('[three.ws] submit:', JSON.stringify(json).slice(0, 200));
 
-    if (json.status === 'done' && json.glbUrl) return json.glbUrl;
+    if (json.status === 'done' && json.glbUrl) { cacheSet('mesh', clean, json.glbUrl); return json.glbUrl; }
     if (json.status === 'error') { console.warn('[three.ws] error:', json.error); return null; }
     if (json.status === 'pending' && json.job) return await poll(json.job, json.retryAfter || 3);
 

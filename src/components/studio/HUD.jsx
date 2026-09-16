@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Mic, MicOff, Send, Wand2, Share2, Square, Check } from 'lucide-react';
+import { Mic, MicOff, Send, Wand2, Share2, Square, Check, Trash2 } from 'lucide-react';
 import { useStudioStore } from '../../store/studioStore';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useVoicePrompt } from '../../hooks/useVoicePrompt';
@@ -8,8 +8,7 @@ const PHASE_LABEL = {
   idle: 'Ready',
   planning: 'Planning…',
   streaming: 'Refining…',
-  building: 'Building scene…',
-  rendering: 'Rendering…',
+  rendering: 'Rendering in Blender…',
   reflecting: 'Reflecting…',
   done: 'Done',
 };
@@ -19,6 +18,10 @@ export default function HUD({ compact = false, engine, cancel, streamStatus }) {
   const setPromptInput = useStudioStore((s) => s.setPromptInput);
   const phase = useStudioStore((s) => s.phase);
   const mood = useStudioStore((s) => s.mood);
+  const clearScene = useStudioStore((s) => s.clearScene);
+  const sendClear = () => { try { if (cancel) cancel(); } catch(e){} };
+  const clearRender = useStudioStore.setState;
+  const objectCount = useStudioStore((s) => (s.sceneObjects || []).length);
   const { isMobile } = useResponsive();
 
   const inputRef = useRef(null);
@@ -67,6 +70,24 @@ export default function HUD({ compact = false, engine, cancel, streamStatus }) {
 
   return (
     <>
+      {objectCount > 0 && (
+        <button
+          type="button"
+          onClick={() => { clearScene(); clearRender({ lastRender: null }); sendClear(); }}
+          title="Clear canvas"
+          style={{
+            position: 'absolute', top: 14, left: 150, zIndex: 12,
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '7px 12px', borderRadius: 12,
+            background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(14px)',
+            border: '1px solid #ef444488',
+            color: '#ef4444', fontSize: 11, fontWeight: 700,
+            cursor: 'pointer', letterSpacing: 0.4,
+          }}
+        >
+          <Trash2 size={12} /> Clear ({objectCount})
+        </button>
+      )}
       <div style={{
         position: 'absolute', top: 14, left: 14, zIndex: 12,
         display: 'flex', alignItems: 'center', gap: 8,

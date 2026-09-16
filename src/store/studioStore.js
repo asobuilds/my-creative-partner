@@ -15,6 +15,7 @@ export const useStudioStore = create((set, get) => ({
     set((s) => ({ nodes: s.nodes.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...patch } } : n)) })),
 
   sceneObjects: [],
+  sceneHistory: [],
   upsertSceneObject: (obj) =>
     set((s) => {
       const i = s.sceneObjects.findIndex((o) => o.id === obj.id);
@@ -23,13 +24,14 @@ export const useStudioStore = create((set, get) => ({
       next[i] = { ...next[i], ...obj };
       return { sceneObjects: next };
     }),
-  clearScene: () => set({ sceneObjects: [] }),
+  addToHistory: (text) => set((s) => ({ sceneHistory: [...s.sceneHistory, text] })),
+  clearScene: () => set({ sceneObjects: [], sceneHistory: [], lastRender: null }),
+  replaceSceneObject: (obj) => set({ sceneObjects: [obj] }),
 
   streamStatus: 'idle',
   setStreamStatus: (streamStatus) => set({ streamStatus }),
   phase: 'idle',
   setPhase: (phase) => set({ phase }),
-  resetPhase: () => set({ phase: 'idle' }),
 
   activeNodeId: null,
   setActiveNodeId: (activeNodeId) => set({ activeNodeId }),
@@ -41,16 +43,17 @@ export const useStudioStore = create((set, get) => ({
   setPromptInput: (promptInput) => set({ promptInput }),
 
   companion: { visible: false, text: '', streaming: false },
-  companionStart: () => set({ companion: { visible: true, text: '', streaming: true } }),
+  companionStart: () => set({ companion: { visible: true, text: '', streaming: false } }),
   companionToken: (delta) =>
     set((s) => ({ companion: { ...s.companion, visible: true, streaming: true, text: s.companion.text + delta } })),
   companionDone: (text) =>
     set((s) => ({ companion: { visible: true, streaming: false, text: text || s.companion.text } })),
   companionDismiss: () => set((s) => ({ companion: { ...s.companion, visible: false } })),
 
-  lastRender: null,
   voiceMuted: false,
   toggleVoiceMuted: () => set((s) => ({ voiceMuted: !s.voiceMuted })),
+
+  lastRender: null,
 
   mood: { primary: '#00f0ff', accent: '#3b82f6', bg: '#070b14', fog: '#070b14' },
   setMood: (mood) => set((s) => ({ mood: { ...s.mood, ...mood } })),

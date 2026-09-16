@@ -1,51 +1,77 @@
 import { streamChat, completeJSON, llmReady } from '../adapters/llm.js';
-import { generateMesh, normalizeShape } from '../adapters/mesh.js';
 import { streamReflection } from '../companion/philosophy.js';
 import { buildScene, blenderReady } from '../adapters/blender.js';
 
-const STATE = { IDLE:'IDLE', PLANNING:'PLANNING', STREAMING:'STREAMING', BUILDING:'BUILDING', RENDERING:'RENDERING', REFLECTING:'REFLECTING', DONE:'DONE', ERROR:'ERROR' };
+const STATE = { IDLE: 'IDLE', PLANNING: 'PLANNING', STREAMING: 'STREAMING', RENDERING: 'RENDERING', REFLECTING: 'REFLECTING', DONE: 'DONE', ERROR: 'ERROR' };
 
-const PRIMITIVE_WORDS = /\b(sphere|ball|orb|torus|ring|donut|cube|box|block|cube|cylinder|tube|cone|pyramid|octahedron|dodecahedron|torusknot|knot)\b/i;
-const CONCRETE_WORDS = /\b(chest|dragon|tree|house|castle|car|vehicle|robot|animal|dog|cat|bird|fish|flower|guitar|sword|shield|book|chair|table|lamp|bottle|cup|mug|treasure|human|person|face|head|hand|foot|eye|statue|monument|building|tower|bridge|door|window|wall|stair|garden|forest|mountain|island|boat|ship|plane|rocket|spaceship|helmet|armor|weapon|tool|crown|gem|jewel|coin|vase|pot|plant|leaf|mushroom|crystal|skull|heart|star|moon|planet)\b/i;
-
-function shouldUseMesh(prompt, plannedKind) {
-  const p = String(prompt || '');
-  const isPrimitive = PRIMITIVE_WORDS.test(p) && !CONCRETE_WORDS.test(p);
-  const isConcrete = CONCRETE_WORDS.test(p);
-  if (isConcrete) return true;
-  if (plannedKind === 'mesh') return true;
-  if (isPrimitive) return false;
-  // Default to mesh for anything non-obvious
-  return true;
-}
-
-
-const PLANNER_SYSTEM = `You convert creative prompts into a compact node-graph plan. You may be given an EXISTING SCENE to extend. If so, decide: ADD new objects (keep existing ones) or REPLACE. Prefer ADD unless the user explicitly says 'instead' or 'replace'.
+const PLANNER_SYSTEM = `You are a 3D scene composer. You build stylized scenes from simple primitive shapes (like a low-poly artist). Given a user prompt, output a scene spec.
 
 Return STRICT JSON: { "nodes": [...], "edges": [...], "scene": { "objects": [...] } }
 
-Rules:
-- 2 to 4 nodes max.
-- Node types: "prompt", "model", "mood", "output".
-- Prompt node data: { "prompt": string }
-- Model node data: { "kind": string, "color": "#rrggbb", "emissive": 0.4, "roughness": 0.28, "metalness": 0.65, "scale": 1.0 }
-- Mood node data: { "color": "#rrggbb", "tone": "calm"|"playful"|"curious"|"wonder" }
-- Scene objects: max 3. Each has id, kind, position [x,y,z], color, emissive, roughness, metalness, scale.
+## Scene composition rules
+- Use 2 to 6 primitive objects to compose the scene. More objects = more detail.
+- Break complex subjects into primitives. "A dragon" = body (torusKnot) + head (sphere) + tail (cone) + eyes (small spheres) + horns (cones).
+- "A castle" = towers (cylinders) + roofs (cones) + main hall (box) + flag (thin box).
+- "A face" = head (sphere) + eyes (spheres) + nose (cone) + mouth (torus).
+- Compose with care: position objects in 3D space so they visually assemble into the subject.
+- Vary scale (0.1 to 3.0) per part. Vary color per part.
 
-DECISION RULE FOR "kind":
-- If the prompt names a CONCRETE, ORGANIC or COMPLEX object (a chest, a dragon, a tree, a house, a car, a robot, an animal, a building), set kind = "mesh". The backend will generate a real 3D model.
-- If the prompt is an ABSTRACT or SIMPLE shape (a sphere, a torus, a cube, "a floating ball of light"), pick the closest primitive: "box", "sphere", "torus", "cylinder", "cone", "octahedron", "dodecahedron", "torusKnot".
-- When in doubt, prefer "mesh".
+## Available primitive kinds
+box, sphere, torus, cylinder, cone, octahedron, dodecahedron, torusKnot
 
-Edges: prompt -> model -> output.
-Layout: prompt x=0 y=140, model x=340 y=140, output x=680 y=140, mood x=340 y=320.`;
+## Object schema
+{
+  "id": string (short, unique),
+  "kind": one of the primitives above,
+  "position": [x, y, z] (Y is up; ground is y=0; scene centered at origin),
+  "color": "#rrggbb",
+  "emissive": 0.0 to 1.2 (0 = matte, high = glowing),
+  "roughness": 0.05 (mirror) to 1.0 (chalky),
+  "metalness": 0.0 (organic) to 1.0 (chrome),
+  "scale": 0.1 to 3.0
+}
+
+## Node graph rules (for the UI)
+- 3 to 4 nodes: prompt, model, output, optional mood.
+- prompt: { id, type:"prompt", position:{x:0,y:140}, data:{ prompt } }
+- model:  { id, type:"model",  position:{x:340,y:140}, data:{ kind:"scene", color, emissive, roughness, metalness, scale } }
+- output: { id, type:"output", position:{x:680,y:140}, data:{} }
+- mood:   { id, type:"mood",   position:{x:340,y:320}, data:{ color, tone:"calm"|"playful"|"curious"|"wonder" } }
+- edges: prompt -> model -> output, and mood -> model.
+
+## Example for "a golden dragon"
+{
+  "nodes": [
+    { "id": "p1", "type": "prompt", "position": {"x":0,"y":140}, "data": {"prompt": "a golden dragon"} },
+    { "id": "m1", "type": "model", "position": {"x":340,"y":140}, "data": {"kind":"scene","color":"#ffb700","emissive":0.3,"roughness":0.2,"metalness":0.9,"scale":1} },
+    { "id": "o1", "type": "output", "position": {"x":680,"y":140}, "data": {} }
+  ],
+  "edges": [{"id":"e1","source":"p1","target":"m1"},{"id":"e2","source":"m1","target":"o1"}],
+  "scene": {
+    "objects": [
+      { "id": "body", "kind": "torusKnot", "position": [0, 0.8, 0], "color": "#ffb700", "emissive": 0.3, "roughness": 0.2, "metalness": 0.9, "scale": 1.2 },
+      { "id": "head", "kind": "sphere", "position": [0, 1.5, 0.9], "color": "#ffcc00", "emissive": 0.4, "roughness": 0.25, "metalness": 0.85, "scale": 0.55 },
+      { "id": "tail", "kind": "cone", "position": [0, 0.6, -1.3], "color": "#ff9900", "emissive": 0.2, "roughness": 0.3, "metalness": 0.8, "scale": 0.8 },
+      { "id": "eyeL", "kind": "sphere", "position": [-0.18, 1.6, 1.3], "color": "#ff0044", "emissive": 1.2, "roughness": 0.1, "metalness": 0.2, "scale": 0.09 },
+      { "id": "eyeR", "kind": "sphere", "position": [0.18, 1.6, 1.3], "color": "#ff0044", "emissive": 1.2, "roughness": 0.1, "metalness": 0.2, "scale": 0.09 },
+      { "id": "hornL", "kind": "cone", "position": [-0.25, 1.9, 0.9], "color": "#fff4c2", "emissive": 0.5, "roughness": 0.15, "metalness": 0.6, "scale": 0.25 },
+      { "id": "hornR", "kind": "cone", "position": [0.25, 1.9, 0.9], "color": "#fff4c2", "emissive": 0.5, "roughness": 0.15, "metalness": 0.6, "scale": 0.25 }
+    ]
+  }
+}
+
+Output ONLY the JSON. No markdown, no preamble.`;
+
+function isPrimitivePrompt(p) {
+  return /^\s*(a|an|the)?\s*(sphere|ball|orb|torus|ring|donut|doughnut|cube|box|block|cylinder|tube|cone|pyramid|octahedron|dodecahedron|torusknot|knot)\s*$/i.test(String(p || '').trim());
+}
 
 export class NodePipelineRouter {
   constructor(send) { this.send = send; this.state = STATE.IDLE; this.abort = null; this.runId = null; }
   cancel() { if (this.abort) try { this.abort.abort(); } catch(e){} this.abort = null; this.state = STATE.IDLE; }
   _emit(o) { try { this.send({ ...o, runId: this.runId }); } catch (e) {} }
 
-  async handleRun({ prompt, graph, existingScene }) {
+  async handleRun({ prompt, graph }) {
     if (this.state !== STATE.IDLE) this.cancel();
     this.abort = new AbortController();
     this.runId = 'run-' + Date.now();
@@ -60,100 +86,82 @@ export class NodePipelineRouter {
       if (llmReady) {
         try {
           plan = await completeJSON(
-            [{ role: 'system', content: PLANNER_SYSTEM }, { role: 'user', content: (graph && graph.existingScene && graph.existingScene.length ? 'EXISTING SCENE: ' + JSON.stringify(graph.existingScene.map(o => ({id: o.id, kind: o.kind, modelUrl: o.modelUrl ? 'yes' : 'no'}))) + '\n\nUSER: ' + String(prompt).slice(0, 500) : String(prompt).slice(0, 500)) }],
-            { maxTokens: 900, temperature: 0.25 }
+            [{ role: 'system', content: PLANNER_SYSTEM }, { role: 'user', content: String(prompt).slice(0, 500) }],
+            { maxTokens: 1400, temperature: 0.5 }
           );
         } catch (e) {
-          this._emit({ type: 'error', message: 'LLM planning failed: ' + e.message });
+          this._emit({ type: 'error', message: 'Planner failed: ' + e.message });
         }
       }
-      if (signal.aborted) return;
 
       if (plan && plan.nodes) {
         for (const n of plan.nodes) this._emit({ type: 'node:add', node: n });
         for (const e of (plan.edges || [])) this._emit({ type: 'edge:add', edge: { ...e, type: 'stream', animated: true } });
       }
 
-      /* 2. STREAMING */
+      /* 2. STREAMING REFINEMENT (poetic description for companion context) */
       this.state = STATE.STREAMING;
       this._emit({ type: 'phase', phase: 'streaming' });
       const promptNode = plan && plan.nodes && plan.nodes.find(n => n.type === 'prompt');
       const promptNodeId = (promptNode && promptNode.id) || 'prompt-' + Date.now();
       const refined = await this._streamTokens(promptNodeId, prompt, signal);
-      if (signal.aborted) return;
 
-      /* 3. SCENE SPEC */
-      const sceneSpec = (plan && plan.scene) || { objects: [{ id: 'main', kind: 'mesh', position: [0, 0.8, 0], color: '#00f0ff', emissive: 0.5, scale: 1 }] };
-      const objects = (sceneSpec.objects || []).slice(0, 3).map((o, i) => ({
-        ...normalizeShape(o),
-        id: o.id || ('obj-' + i + '-' + Math.random().toString(36).slice(2, 6)),
-      }));
+      /* 3. SCENE SPEC -> BLENDER */
+      const sceneSpec = (plan && plan.scene) || {
+        objects: [
+          { id: 'core', kind: 'sphere', position: [0, 1, 0], color: '#00f0ff', emissive: 0.5, roughness: 0.3, metalness: 0.5, scale: 1 },
+        ],
+      };
+      const objects = (sceneSpec.objects || []).slice(0, 8).map((o, i) => {
+        const safe = o && typeof o === 'object' ? o : {};
+        return {
+          id: String(safe.id || ('obj' + i)),
+          kind: ['box','sphere','torus','cylinder','cone','octahedron','dodecahedron','torusKnot'].includes(safe.kind) ? safe.kind : 'sphere',
+          position: Array.isArray(safe.position) && safe.position.length === 3 ? safe.position : [0, 1, 0],
+          color: typeof safe.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(safe.color) ? safe.color : '#00f0ff',
+          emissive: typeof safe.emissive === 'number' ? Math.max(0, Math.min(1.5, safe.emissive)) : 0.3,
+          roughness: typeof safe.roughness === 'number' ? Math.max(0.05, Math.min(1, safe.roughness)) : 0.35,
+          metalness: typeof safe.metalness === 'number' ? Math.max(0, Math.min(1, safe.metalness)) : 0.4,
+          scale: typeof safe.scale === 'number' ? Math.max(0.05, Math.min(4, safe.scale)) : 1,
+        };
+      });
 
-      // Emit placeholders immediately so the user sees *something*
       objects.forEach((o) => {
         this._emit({
           type: 'scene:upsert',
           object: {
             id: o.id, kind: o.kind, color: o.color, emissive: o.emissive,
-            position: o.position, growth: 0.01, spin: 0.35, isGenerating: true,
+            roughness: o.roughness, metalness: o.metalness,
+            position: o.position, growth: 0.01, spin: 0, isGenerating: true,
           },
         });
       });
 
-      console.log('[DEBUG] prompt=', JSON.stringify(prompt));
-      console.log('[DEBUG] objects=', JSON.stringify(objects.map(o=>({id:o.id,kind:o.kind}))));
-      const forceMesh = shouldUseMesh(prompt, objects[0] && objects[0].kind);
-      console.log('[DEBUG] forceMesh=', forceMesh);
-      const hasMeshKind = forceMesh || objects.some(o => o.kind === 'mesh');
-      if (forceMesh) objects.forEach(o => { o.kind = 'mesh'; });
-      let finalGlb = null;
-      let finalPreview = null;
-
-      /* 4a. HIGH-QUALITY MESH PATH */
-      if (hasMeshKind) {
-        this.state = STATE.BUILDING;
-        this._emit({ type: 'phase', phase: 'building' });
-        try {
-          console.log('[DEBUG] calling three.ws generateMesh...');
-          finalGlb = await generateMesh(prompt);
-          console.log('[DEBUG] three.ws returned=', finalGlb);
-          if (finalGlb) { objects.forEach(o => { if (o.kind === 'mesh') o.modelUrl = finalGlb; }); }
-        } catch (e) {
-          this._emit({ type: 'error', message: 'Mesh generation failed: ' + e.message });
-        }
-      }
-
-      /* 4b. BLENDER FALLBACK (only if no mesh result) */
-      console.log('[DEBUG] Blender fallback reached. finalGlb=', finalGlb);
-      if (!finalGlb && blenderReady && !signal.aborted) {
+      /* 4. BLENDER RENDER */
+      let preview = null, glb = null;
+      if (blenderReady && !signal.aborted) {
         this.state = STATE.RENDERING;
         this._emit({ type: 'phase', phase: 'rendering' });
         try {
-          const procedural = objects.filter(o => o.kind !== 'mesh').map((o, i) => ({
-            id: o.id, kind: o.kind, position: o.position, color: o.color,
-            emissive: o.emissive, roughness: o.roughness, metalness: o.metalness, scale: o.scale,
-          }));
-          const spec = { objects: procedural.length ? procedural : [{ id: 'main', kind: 'sphere', position: [0, 1, 0], color: objects[0]?.color || '#00f0ff', emissive: 0.4, roughness: 0.3, metalness: 0.4, scale: 1 }] };
-          const render = await buildScene(spec, this.runId);
-          if (signal.aborted) return;
-          finalPreview = render.preview;
-          if (!finalGlb) finalGlb = render.glb;
-          if (render.glb) { objects.forEach(o => { o.modelUrl = render.glb; }); }
+          console.log('[blender] building', objects.length, 'objects...');
+          const render = await buildScene({ objects }, this.runId);
+          preview = render.preview;
+          glb = render.glb;
+          console.log('[blender] done ->', preview);
         } catch (e) {
-          this._emit({ type: 'error', message: 'Blender render failed: ' + e.message });
+          this._emit({ type: 'error', message: 'Blender failed: ' + e.message });
         }
       }
 
-      /* 5. EMIT RENDER RESULT */
-      if (finalPreview || finalGlb) {
-        this._emit({ type: 'render:done', preview: finalPreview, glb: finalGlb, texture: null });
+      if (preview || glb) {
+        this._emit({ type: 'render:done', preview, glb, texture: null });
       }
 
-      objects.forEach(o => this._emit({ type: 'scene:upsert', object: { id: o.id, kind: o.kind, modelUrl: o.modelUrl || null, growth: 1, isGenerating: false } }));
+      objects.forEach(o => this._emit({ type: 'scene:upsert', object: { id: o.id, growth: 1, isGenerating: false } }));
       this._emit({ type: 'node:patch', id: promptNodeId, data: { isStreaming: false } });
       this._emit({ type: 'done', id: promptNodeId });
 
-      /* 6. COMPANION */
+      /* 5. COMPANION */
       this.state = STATE.REFLECTING;
       const reflectionId = 'reflect-' + Date.now();
       this._emit({ type: 'companion:start', id: reflectionId });
@@ -182,12 +190,12 @@ export class NodePipelineRouter {
   async _streamTokens(nodeId, prompt, signal) {
     if (!llmReady) return prompt;
     const messages = [
-      { role: 'system', content: 'You are a 3D concept refiner. Given a raw creative prompt, output a single concise visual description (max 40 words) describing shape, palette, mood, and one childlike detail. No preamble. No quotes.' },
+      { role: 'system', content: 'You are a scene describer. Given a raw creative prompt, output a short poetic description (max 30 words) of what someone just imagined. Focus on mood and one childlike detail. No preamble. No quotes.' },
       { role: 'user', content: String(prompt).slice(0, 300) },
     ];
     let full = '';
     try {
-      for await (const delta of streamChat(messages, { maxTokens: 120, temperature: 0.8, signal })) {
+      for await (const delta of streamChat(messages, { maxTokens: 90, temperature: 0.85 })) {
         if (signal.aborted) break;
         full += delta;
         this._emit({ type: 'token', id: nodeId, delta });

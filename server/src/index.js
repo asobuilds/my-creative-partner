@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
+import os from 'node:os';
+import path from 'node:path';
 import http from 'http';
 import cors from 'cors';
 import { WebSocketServer } from 'ws';
@@ -21,6 +23,7 @@ const app = express();
 app.use(cors({ origin: ORIGIN, credentials: true }));
 app.use(express.json({ limit: '2mb' }));
 app.use('/renders', express.static(process.env.BLENDER_OUTPUT_PATH || '/tmp/synthetix-renders'));
+app.use('/refined', express.static(path.join(os.tmpdir(), 'synthetix-refine')));
 
 app.get('/health', (_req, res) =>
   res.json({

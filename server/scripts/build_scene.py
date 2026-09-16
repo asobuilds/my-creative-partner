@@ -167,11 +167,11 @@ def render(outdir):
     s.render.engine = 'BLENDER_EEVEE_NEXT' if 'BLENDER_EEVEE_NEXT' in engines else ('BLENDER_EEVEE' if 'BLENDER_EEVEE' in engines else 'CYCLES')
     try:
         if 'EEVEE' in s.render.engine:
-            s.eevee.taa_render_samples = 64
+            s.eevee.taa_render_samples = 24
     except:
         pass
-    s.render.resolution_x = 1600
-    s.render.resolution_y = 900
+    s.render.resolution_x = 1280
+    s.render.resolution_y = 720
     s.render.image_settings.file_format = 'PNG'
     s.render.filepath = os.path.join(outdir, 'preview')
     s.view_settings.view_transform = 'Filmic'
