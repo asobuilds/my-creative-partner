@@ -12,6 +12,7 @@ import { videoReady } from './adapters/video.js';
 import { blenderReady } from './adapters/blender.js';
 import { higgsfieldReady } from './adapters/higgsfield.js';
 import mountTts from './routes/tts.js';
+import mountImage from './routes/image.js';
 
 const PORT = Number(process.env.PORT) || 5000;
 const ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
@@ -50,6 +51,7 @@ app.post('/api/command', (req, res) => {
 });
 
 mountTts(app);
+mountImage(app);
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/api/stream' });
 

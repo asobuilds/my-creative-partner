@@ -6,10 +6,11 @@ import { useVoicePrompt } from '../../hooks/useVoicePrompt';
 
 const PHASE_LABEL = {
   idle: 'Ready',
-  planning: 'Planning graph...',
-  streaming: 'Refining prompt...',
-  materializing: 'Generating mesh...',
-  reflecting: 'Reflecting...',
+  planning: 'Planning…',
+  streaming: 'Refining…',
+  building: 'Building scene…',
+  rendering: 'Rendering…',
+  reflecting: 'Reflecting…',
   done: 'Done',
 };
 
@@ -20,19 +21,31 @@ export default function HUD({ compact = false, engine, cancel, streamStatus }) {
   const mood = useStudioStore((s) => s.mood);
   const { isMobile } = useResponsive();
 
-  const submit = () => {
-    const text = useStudioStore.getState().promptInput;
-    if (!text || !text.trim()) return;
-    engine.submit(text, { source: 'text' });
+  const inputRef = useRef(null);
+  const submittedRef = useRef('');
+
+  const submit = (source = 'text') => {
+    const text = (inputRef.current && inputRef.current.value) || useStudioStore.getState().promptInput || '';
+    const clean = text.trim();
+    if (!clean) return;
+    if (clean === submittedRef.current && performance.now() - (submittedRef.currentTs || 0) < 1500) return;
+    submittedRef.current = clean;
+    submittedRef.currentTs = performance.now();
+    engine.submit(clean, { source });
+    setPromptInput('');
+    if (inputRef.current) inputRef.current.value = '';
     clearCaptured();
   };
 
   const { listening, supported, toggle: toggleVoice, lastCaptured, clearCaptured, autoSubmit } = useVoicePrompt({
-    onFinal: (text) => { if (autoSubmit) engine.submit(text, { source: 'voice' }); },
+    onFinal: (text) => {
+      if (inputRef.current) inputRef.current.value = text;
+      setPromptInput(text);
+      if (autoSubmit) submit('voice');
+    },
   });
 
   const [hintVisible, setHintVisible] = useState(false);
-
   useEffect(() => {
     if (listening || !lastCaptured) { setHintVisible(false); return; }
     setHintVisible(true);
@@ -40,16 +53,15 @@ export default function HUD({ compact = false, engine, cancel, streamStatus }) {
     return () => clearTimeout(t);
   }, [listening, lastCaptured]);
 
-  const inputRef = useRef(null);
   useEffect(() => {
     const onKey = (e) => {
       if (e.target !== inputRef.current) return;
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit('text'); }
       if (e.key === 'Escape') { e.preventDefault(); if (cancel) cancel(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  });
+  }, [cancel]);
 
   const busy = phase !== 'idle' && phase !== 'done';
 
@@ -87,13 +99,12 @@ export default function HUD({ compact = false, engine, cancel, streamStatus }) {
       </button>
 
       <form
-        onSubmit={(e) => { e.preventDefault(); submit(); }}
+        onSubmit={(e) => { e.preventDefault(); submit('text'); }}
         style={{
           position: 'absolute', left: '50%', transform: 'translateX(-50%)',
           bottom: compact ? 78 : 26, zIndex: 15,
-          width: compact ? 'calc(100% - 24px)' : 'min(620px, 62vw)',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'stretch',
+          width: compact ? 'calc(100% - 24px)' : 'min(720px, 70vw)',
+          display: 'flex', flexDirection: 'column', alignItems: 'stretch',
           padding: '6px 6px 6px 16px',
           background: 'rgba(15,23,42,0.94)', backdropFilter: 'blur(20px)',
           border: '1px solid ' + (listening ? '#ff4757' : mood.primary + '66'),
@@ -107,14 +118,14 @@ export default function HUD({ compact = false, engine, cancel, streamStatus }) {
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <input
             ref={inputRef}
-            value={promptInput}
-            onChange={(e) => { setPromptInput(e.target.value); if (lastCaptured) clearCaptured(); }}
-            placeholder={listening ? 'Listening... speak now' : (isMobile ? 'Imagine...' : 'Type or speak a spatial prompt...')}
+            defaultValue={promptInput}
+            onChange={(e) => { setPromptInput(e.target.value); }}
+            placeholder={listening ? 'Listening… speak now' : (isMobile ? 'Imagine…' : 'Describe what you want to create…')}
             autoComplete="off"
             spellCheck={false}
             style={{
               flex: 1, background: 'transparent', border: 'none', outline: 'none',
-              color: '#fff', fontSize: 13, padding: '8px 0',
+              color: '#fff', fontSize: 14, padding: '10px 0',
             }}
           />
           <button
@@ -123,7 +134,7 @@ export default function HUD({ compact = false, engine, cancel, streamStatus }) {
             disabled={!supported}
             title={supported ? (listening ? 'Stop voice' : 'Start voice') : 'Voice not supported'}
             style={{
-              width: 38, height: 38, borderRadius: '50%',
+              width: 40, height: 40, borderRadius: '50%',
               background: listening ? '#ff4757' : 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.12)',
               color: '#fff', cursor: supported ? 'pointer' : 'not-allowed',
@@ -132,32 +143,32 @@ export default function HUD({ compact = false, engine, cancel, streamStatus }) {
               transition: 'background .2s',
             }}
           >
-            {listening ? <MicOff size={16} /> : <Mic size={16} />}
+            {listening ? <MicOff size={17} /> : <Mic size={17} />}
           </button>
           {busy ? (
             <button
               type="button"
               onClick={() => { if (cancel) cancel(); }}
               style={{
-                width: 38, height: 38, borderRadius: '50%',
+                width: 40, height: 40, borderRadius: '50%',
                 background: 'linear-gradient(135deg,#ef4444,#b91c1c)',
                 border: 'none', color: '#fff', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
-              <Square size={14} />
+              <Square size={15} />
             </button>
           ) : (
             <button
               type="submit"
               style={{
-                width: 38, height: 38, borderRadius: '50%',
+                width: 40, height: 40, borderRadius: '50%',
                 background: 'linear-gradient(135deg, ' + mood.primary + ', ' + mood.accent + ')',
                 border: 'none', color: '#000', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
-              <Send size={16} />
+              <Send size={17} />
             </button>
           )}
         </div>

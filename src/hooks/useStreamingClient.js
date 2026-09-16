@@ -6,6 +6,7 @@ const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5000').repl
 
 function toRenderUrl(p) {
   if (!p) return null;
+  if (/^https?:\/\//.test(p)) return p;
   const idx = p.indexOf('/synthetix-renders/');
   if (idx === -1) return null;
   return API_BASE + '/renders/' + p.slice(idx + '/synthetix-renders/'.length);
@@ -34,7 +35,7 @@ export function useStreamingClient({ enabled = true, path } = {}) {
             s.patchNodeData(msg.id, { streamed: prev + (msg.delta || ''), isStreaming: true });
             break;
           }
-          case 'node:add': s.addNode(msg.node); break;
+          case 'node:add': { const nn = msg.node || {}; nn.id = nn.id || ('n-' + Date.now() + '-' + Math.random().toString(36).slice(2,6)); nn.type = nn.type || 'prompt'; nn.position = (nn.position && typeof nn.position.x === 'number' && typeof nn.position.y === 'number') ? nn.position : { x: 80 + Math.random() * 500, y: 120 + Math.random() * 260 }; nn.data = nn.data || {}; s.addNode(nn); break; }
           case 'node:patch': s.patchNodeData(msg.id, msg.data); break;
           case 'edge:add':
             useStudioStore.setState((prev) => ({ edges: [...prev.edges, msg.edge] }));

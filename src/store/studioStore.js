@@ -29,6 +29,7 @@ export const useStudioStore = create((set, get) => ({
   setStreamStatus: (streamStatus) => set({ streamStatus }),
   phase: 'idle',
   setPhase: (phase) => set({ phase }),
+  resetPhase: () => set({ phase: 'idle' }),
 
   activeNodeId: null,
   setActiveNodeId: (activeNodeId) => set({ activeNodeId }),

@@ -37,7 +37,7 @@ async function* streamOpenAICompatible({ baseUrl, apiKey, model, maxTokens, temp
   const ctl = new AbortController();
   const onAbort = () => ctl.abort();
   if (signal) signal.addEventListener('abort', onAbort);
-  const timeout = setTimeout(() => ctl.abort(), 45000);
+  const timeout = setTimeout(() => ctl.abort(), 90000);
 
   try {
     const res = await fetch(baseUrl.replace(/\/$/, '') + '/chat/completions', {
