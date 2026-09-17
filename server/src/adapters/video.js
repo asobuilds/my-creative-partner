@@ -22,7 +22,7 @@ export async function renderStory({ imageUrl, title, subtitle, durationSec = 6 }
         {
           clips: [
             {
-              asset: { type: 'image', src: imageUrl },
+              asset: { type: 'image', src: (typeof imageUrl === 'string' && imageUrl.startsWith('data:')) ? imageUrl : imageUrl },
               start: 0,
               length: durationSec,
               effect: 'zoomInSlow',

@@ -1,6 +1,7 @@
 import { streamChat, completeJSON, llmReady } from '../adapters/llm.js';
 import { streamReflection } from '../companion/philosophy.js';
 import { buildScene, blenderReady } from '../adapters/blender.js';
+import { generateTripoMesh, tripoReady } from '../adapters/tripo.js';
 
 const STATE = { IDLE: 'IDLE', PLANNING: 'PLANNING', STREAMING: 'STREAMING', RENDERING: 'RENDERING', REFLECTING: 'REFLECTING', DONE: 'DONE', ERROR: 'ERROR' };
 
@@ -138,8 +139,26 @@ export class NodePipelineRouter {
       });
 
       /* 4. BLENDER RENDER */
-      let preview = null, glb = null;
-      if (blenderReady && !signal.aborted) {
+      let preview = null, glb = null, source = null;
+
+      // Path A: Tripo3D (real textured mesh)
+      if (tripoReady && !signal.aborted) {
+        this.state = STATE.RENDERING;
+        this._emit({ type: 'phase', phase: 'rendering' });
+        try {
+          const richPrompt = objects.map(o => o.kind + ' in ' + o.color).join(', ') + '. ' + (refined || prompt);
+          const tripo = await generateTripoMesh(richPrompt, { faceLimit: 50000 });
+          glb = tripo.modelUrl;
+          preview = tripo.renderedImageUrl;
+          source = 'tripo';
+          console.log('[tripo] success ->', glb);
+        } catch (e) {
+          console.warn('[tripo] failed, falling back to Blender:', e.message);
+        }
+      }
+
+      // Path B: Blender fallback (fast, offline, primitives)
+      if (!glb && blenderReady && !signal.aborted) {
         this.state = STATE.RENDERING;
         this._emit({ type: 'phase', phase: 'rendering' });
         try {
@@ -147,6 +166,7 @@ export class NodePipelineRouter {
           const render = await buildScene({ objects }, this.runId);
           preview = render.preview;
           glb = render.glb;
+          source = 'blender';
           console.log('[blender] done ->', preview);
         } catch (e) {
           this._emit({ type: 'error', message: 'Blender failed: ' + e.message });
@@ -154,10 +174,10 @@ export class NodePipelineRouter {
       }
 
       if (preview || glb) {
-        this._emit({ type: 'render:done', preview, glb, texture: null });
+        this._emit({ type: 'render:done', preview, glb, source, texture: null });
       }
 
-      objects.forEach(o => this._emit({ type: 'scene:upsert', object: { id: o.id, growth: 1, isGenerating: false } }));
+      objects.forEach(o => this._emit({ type: 'scene:upsert', object: { id: o.id, growth: 1, isGenerating: false, modelUrl: o.modelUrl || null } }));
       this._emit({ type: 'node:patch', id: promptNodeId, data: { isStreaming: false } });
       this._emit({ type: 'done', id: promptNodeId });
 

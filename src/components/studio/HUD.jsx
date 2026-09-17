@@ -49,6 +49,8 @@ export default function HUD({ compact = false, engine, cancel, streamStatus }) {
   });
 
   const [hintVisible, setHintVisible] = useState(false);
+  const [generatingStory, setGeneratingStory] = useState(false);
+  const [storyUrl, setStoryUrl] = useState(null);
   useEffect(() => {
     if (listening || !lastCaptured) { setHintVisible(false); return; }
     setHintVisible(true);
@@ -101,12 +103,37 @@ export default function HUD({ compact = false, engine, cancel, streamStatus }) {
       </div>
 
       <button
-        onClick={() => {
-          const c = document.querySelector('canvas'); if (!c) return;
-          const a = document.createElement('a');
-          a.download = 'synthetix-' + Date.now() + '.png';
-          a.href = c.toDataURL('image/png');
-          a.click();
+        onClick={async () => {
+          if (generatingStory) return;
+          try {
+            setGeneratingStory(true);
+            setStoryUrl(null);
+            const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5000').replace(/\/$/, '');
+
+            // Prefer the last render (Blender preview), else the canvas
+            const render = useStudioStore.getState().lastRender;
+            let dataUrl = null;
+            if (render && render.preview) {
+              const abs = render.preview.startsWith('http') ? render.preview : (API + '/' + render.preview.replace(/^\//, ''));
+              const r = await fetch(abs);
+              const blob = await r.blob();
+              dataUrl = await new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(blob); });
+            } else {
+              const c = document.querySelector('canvas');
+              if (c) dataUrl = c.toDataURL('image/png');
+            }
+            if (!dataUrl) { setGeneratingStory(false); return; }
+
+            const promptText = (useStudioStore.getState().sceneHistory || []).join(' \u2192 ') || 'A 9jaWonderPal creation';
+            const body = { imageUrl: dataUrl, title: '9jaWonderPal', subtitle: promptText.slice(0, 80), durationSec: 6 };
+            const res = await fetch(API + '/api/story/render', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            const json = await res.json();
+            if (json.url) setStoryUrl(json.url);
+          } catch (e) {
+            console.error('story render failed', e);
+          } finally {
+            setGeneratingStory(false);
+          }
         }}
         style={{
           position: 'absolute', top: 14, right: 14, zIndex: 12,
@@ -116,7 +143,7 @@ export default function HUD({ compact = false, engine, cancel, streamStatus }) {
           border: 'none', color: '#fff', fontWeight: 700, fontSize: 11, cursor: 'pointer',
         }}
       >
-        <Share2 size={13} /> {isMobile ? 'Story' : 'Post 24h Story'}
+        <Share2 size={13} /> {generatingStory ? 'Rendering video…' : (isMobile ? 'Story' : 'Post 24h Story')}
       </button>
 
       <form
@@ -209,6 +236,20 @@ export default function HUD({ compact = false, engine, cancel, streamStatus }) {
         )}
       </form>
 
+      {storyUrl && (
+        <div style={{
+          position: 'fixed', bottom: 24, right: 24, zIndex: 60,
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '12px 18px', borderRadius: 14,
+          background: 'rgba(34,197,94,0.15)', border: '1px solid #22c55e',
+          color: '#22c55e', fontSize: 13, fontWeight: 700,
+          backdropFilter: 'blur(14px)',
+        }}>
+          Video ready!
+          <a href={storyUrl} target="_blank" rel="noreferrer" style={{ color: '#fff', textDecoration: 'underline' }}>Open</a>
+          <button onClick={() => setStoryUrl(null)} style={{ background: 'transparent', border: 'none', color: '#22c55e', cursor: 'pointer', padding: 0 }}>×</button>
+        </div>
+      )}
       <style>{`
         @keyframes voiceHint { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>

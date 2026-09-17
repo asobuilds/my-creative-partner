@@ -13,8 +13,14 @@ import { mediaReady } from './adapters/media.js';
 import { videoReady } from './adapters/video.js';
 import { blenderReady } from './adapters/blender.js';
 import { higgsfieldReady } from './adapters/higgsfield.js';
+import { tripoReady } from './adapters/tripo.js';
+import { agnesReady } from './adapters/agnes.js';
 import mountTts from './routes/tts.js';
 import mountImage from './routes/image.js';
+import mountStory from './routes/story.js';
+import mountReference from './routes/reference.js';
+import mountAnimate from './routes/animate.js';
+import mountAssets from './routes/assets.js';
 
 const PORT = Number(process.env.PORT) || 5000;
 const ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
@@ -36,6 +42,8 @@ app.get('/health', (_req, res) =>
     video: videoReady,
     blender: blenderReady,
     higgsfield: higgsfieldReady,
+    tripo: tripoReady,
+    agnes: agnesReady,
     uptime: process.uptime(),
   })
 );
@@ -55,6 +63,10 @@ app.post('/api/command', (req, res) => {
 
 mountTts(app);
 mountImage(app);
+mountStory(app);
+mountReference(app);
+mountAnimate(app);
+mountAssets(app);
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/api/stream' });
 

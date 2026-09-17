@@ -7,7 +7,7 @@ const {
   HF_MODEL = 'higgsfield-ai/soul/v2/standard',
 } = process.env;
 
-const isReal = (v) => Boolean(v) && !String(v).startsWith('PASTE_');
+const isReal = (v) => Boolean(v) && String(v).trim().length > 2 && !/^(PASTE|YOUR_|REPLACE)/i.test(String(v));
 export const higgsfieldReady = isReal(HF_API_KEY_ID) && isReal(HF_API_KEY_SECRET);
 
 const authHeader = () => 'Key ' + HF_API_KEY_ID + ':' + HF_API_KEY_SECRET;

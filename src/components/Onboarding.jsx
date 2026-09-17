@@ -6,14 +6,14 @@ const STEPS = [
   {
     icon: <Sparkles size={34} />,
     color: '#ffb700',
-    title: 'Welcome to WonderPal',
+    title: 'Welcome to 9jaWonderPal',
     body: 'A creative studio where your child speaks an idea and watches it become a 3D world. Not another video. Not another game. A place to imagine out loud.',
   },
   {
     icon: <Mic size={34} />,
     color: '#22d3ee',
     title: 'Their voice is the tool',
-    body: 'No reading. No typing. Your child taps the big mic and speaks. WonderPal listens, transcribes, and builds a world from what they say. You can edit or reword before sending.',
+    body: 'No reading. No typing. Your child taps the big mic and speaks. 9jaWonderPal listens, transcribes, and builds a world from what they say. You can edit or reword before sending.',
   },
   {
     icon: <Heart size={34} />,

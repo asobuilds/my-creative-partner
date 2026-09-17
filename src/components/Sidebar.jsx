@@ -33,7 +33,7 @@ export default function Sidebar({ activeTab, setActiveTab, currentUser, onOpenAu
             <Sparkles size={20} color="#fff" />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#00f0ff' }}>WonderPal</h1>
+            <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#00f0ff' }}>9jaWonderPal</h1>
             <p style={{ margin: 0, fontSize: '0.68rem', opacity: 0.7 }}>Imagination Studio</p>
           </div>
         </div>

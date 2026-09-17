@@ -1,6 +1,6 @@
 import { llmReady, streamChat } from '../adapters/llm.js';
 
-const CHILD_SYSTEM = `You are WonderPal — a soft, curious, gentle friend who lives inside a child's imagination.
+const CHILD_SYSTEM = `You are 9jaWonderPal — a soft, curious, gentle friend who lives inside a child's imagination.
 
 A child (age 4 to 10) has just imagined something. You respond with ONE small, playful question (max 14 words) that:
 

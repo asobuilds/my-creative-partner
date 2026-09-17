@@ -1,12 +1,12 @@
 # AGENT.md — Context for AI coding assistants
 
-This file is the single source of truth for any AI agent (Claude, GPT, Copilot, Cursor) working on **WonderPal**. Read this before touching any code.
+This file is the single source of truth for any AI agent (Claude, GPT, Copilot, Cursor) working on **9jaWonderPal**. Read this before touching any code.
 
 ---
 
 ## What this project is
 
-**WonderPal** is a voice-first creative studio for children aged 4 to 10 and their parents. A child speaks an idea; the system builds a 3D world; a companion asks a reflection question.
+**9jaWonderPal** is a voice-first creative studio for children aged 4 to 10 and their parents. A child speaks an idea; the system builds a 3D world; a companion asks a reflection question.
 
 Not a game. Not a story app. Not a chatbot.
 
@@ -186,7 +186,7 @@ Three.js plus react-three-fiber. When `lastRender.preview` exists, the viewport 
 - Do not add a sign-up prompt before the first creation.
 - Do not add analytics, telemetry, or tracking.
 - Do not show the node graph to a child.
-- Do not reference "Synthetix" — the project is WonderPal now.
+- Do not reference "Synthetix" — the project is 9jaWonderPal now.
 - Do not add "kind: mesh" back to the planner. three.ws was removed because of grey-box output on the free tier.
 - Do not use `require()` in server code. The server is ESM (`"type": "module"`).
 - Do not use heredocs with `#` at shell level. zsh chokes on `#` in pasted commands.

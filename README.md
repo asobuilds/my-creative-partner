@@ -1,4 +1,4 @@
-# WonderPal — Imagination Studio for Kids & Parents
+# 9jaWonderPal — Imagination Studio for Kids & Parents
 
 > **"Say it. See it. Wonder about it."**
 
@@ -8,7 +8,7 @@ A voice-first creative studio where a child speaks an idea and watches it become
 
 ## What it is
 
-WonderPal is not another story app, video app, or game. It is a **co-creation space** — a parent and child sit together, the child speaks, and a small 3D world builds in front of them. After each world, a gentle companion asks a question. Not a lecture. An invitation.
+9jaWonderPal is not another story app, video app, or game. It is a **co-creation space** — a parent and child sit together, the child speaks, and a small 3D world builds in front of them. After each world, a gentle companion asks a question. Not a lecture. An invitation.
 
 **The core promise to parents:** *"This is not an app that watches your child. This is an app that listens to them."*
 
