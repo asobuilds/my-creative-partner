@@ -1,74 +1,63 @@
 import React, { useEffect, useRef, useState } from 'react';
-import SpatialViewport from './SpatialViewport';
-import CompanionOverlay from './CompanionOverlay';
-import ReferencePanel from './ReferencePanel';
-import ImageSearchPanel from './ImageSearchPanel';
+import BookView from './BookView';
 import { useStudioStore } from '../../store/studioStore';
 import { useVoicePrompt } from '../../hooks/useVoicePrompt';
-import { usePromptEngine } from '../../hooks/usePromptEngine';
-import { useReference } from '../../hooks/useReference';
+import { useStoryPage } from '../../hooks/useStoryPage';
 import { startMoodSync } from '../../engine/moodEngine';
-import { Mic, Sparkles, Save, RotateCcw, Volume2, VolumeX, History, Share2, BookOpen, Film } from 'lucide-react';
+import { Mic, Sparkles, Save, RotateCcw, Volume2, VolumeX, History, Share2, BookOpen, Award, Play, X } from 'lucide-react';
 
-const PHASE_TEXT = {
-  idle: 'Ready when you are!',
-  planning: 'Thinking about your idea…',
-  streaming: 'Getting excited…',
-  rendering: 'Building your world…',
-  reflecting: '9jaWonderPal is thinking of a question…',
-  done: 'Done! Look what you made.',
-};
+function resolveUrl(u) {
+  if (!u) return null;
+  if (/^https?:\/\//.test(u)) return u;
+  const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5000').replace(/\/$/, '');
+  if (u.startsWith('/')) return API + u;
+  return API + '/' + u;
+}
+
 
 const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5000').replace(/\/$/, '');
 
 export default function ChildMode() {
-  /* ---------- Hooks ---------- */
-  const { engine } = usePromptEngine();
-
-  const phase = useStudioStore((s) => s.phase);
   const mood = useStudioStore((s) => s.mood);
   const muted = useStudioStore((s) => s.voiceMuted);
   const toggleMuted = useStudioStore((s) => s.toggleVoiceMuted);
-  const saveCurrentWorld = useStudioStore((s) => s.saveCurrentWorld);
-  const lastRender = useStudioStore((s) => s.lastRender);
-  const objectCount = useStudioStore((s) => s.sceneObjects.length);
-  const history = useStudioStore((s) => s.sceneHistory);
-  const clearScene = useStudioStore((s) => s.clearScene);
+  const pages = useStudioStore((s) => s.pages);
+  const stickers = useStudioStore((s) => s.stickers);
+  const clearPages = useStudioStore((s) => s.clearPages);
+  const saveCurrentBook = useStudioStore((s) => s.saveCurrentBook);
+  const attachVideoToBook = useStudioStore((s) => s.attachVideoToBook);
 
   const [savedToast, setSavedToast] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [showReference, setShowReference] = useState(true);
-  const [showSearch, setShowSearch] = useState(false);
-  const [autoSearchDone, setAutoSearchDone] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [lastTitle, setLastTitle] = useState('');
   const [generatingStory, setGeneratingStory] = useState(false);
   const [storyUrl, setStoryUrl] = useState(null);
-  const [animating, setAnimating] = useState(false);
-  const [videoUrl, setVideoUrl] = useState(null);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [lastBookId, setLastBookId] = useState(null);
   const inputRef = useRef(null);
 
-  /* ---------- Derived values ---------- */
-  const lastPrompt = history.length ? history[history.length - 1] : '';
+  const { createPage } = useStoryPage();
 
-  /* ---------- Effects (all after derived values) ---------- */
+  useEffect(() => { startMoodSync(); }, []);
+
+  // Auto-open video modal when ready
   useEffect(() => {
-    startMoodSync();
-  }, []);
+    if (storyUrl) setShowVideoModal(true);
+  }, [storyUrl]);
 
-  useEffect(() => {
-    if (phase !== 'done') return;
-    if (!lastPrompt) return;
-    if (autoSearchDone === lastPrompt) return;
-    const t = setTimeout(() => {
-      setShowSearch(true);
-      setAutoSearchDone(lastPrompt);
-    }, 800);
-    return () => clearTimeout(t);
-  }, [phase, lastPrompt, autoSearchDone]);
-
-  const { data: refData, loading: refLoading, dismiss: dismissRef } = useReference(lastPrompt, {
-    enabled: showReference && phase === 'done' && !!lastPrompt,
-    mode: 'auto',
-  });
+  const submit = async (text) => {
+    const clean = String(text || '').trim();
+    if (!clean || busy) return;
+    setBusy(true);
+    setLastTitle(clean);
+    if (inputRef.current) inputRef.current.value = '';
+    try {
+      await createPage(clean);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const { listening, supported, toggle: toggleVoice } = useVoicePrompt({
     onFinal: (text) => {
@@ -80,167 +69,117 @@ export default function ChildMode() {
     },
   });
 
-  /* ---------- Handlers ---------- */
-  function submit(text) {
-    const clean = (text || '').trim();
-    if (!clean) return;
-    engine.submit(clean, { source: 'child' });
-    if (inputRef.current) inputRef.current.value = '';
-  }
-
-  function onSave() {
-    if (!objectCount) return;
-    const world = saveCurrentWorld(lastRender?.preview || null, history.join(' to '));
-    if (world) {
+  const onSave = () => {
+    const book = saveCurrentBook();
+    if (book) {
+      setLastBookId(book.id);
       setSavedToast(true);
       setTimeout(() => setSavedToast(false), 2400);
     }
-  }
+  };
 
-  async function onShare() {
-    if (generatingStory) return;
-    const render = useStudioStore.getState().lastRender;
-    if (!render || !render.preview) return;
+  const onSaveUnused = () => {
+    if (!pages.length) return;
+    // Save the last page's image as the world preview
+    const last = pages[pages.length - 1];
+    const book = saveCurrentBook();
+    if (book) {
+      setSavedToast(true);
+      setTimeout(() => setSavedToast(false), 2400);
+    }
+  };
+
+  const onShare = async () => {
+    if (generatingStory || !pages.length) return;
     try {
       setGeneratingStory(true);
       setStoryUrl(null);
-      const abs = render.preview.startsWith('http') ? render.preview : (API + render.preview);
-      const r = await fetch(abs);
-      const blob = await r.blob();
-      const dataUrl = await new Promise((res) => {
-        const fr = new FileReader();
-        fr.onload = () => res(fr.result);
-        fr.readAsDataURL(blob);
-      });
-      const promptText = history.join(' to ') || 'A 9jaWonderPal creation';
-      const res2 = await fetch(API + '/api/story/render', {
+      // Use the first page's image as the video backdrop, first page's title as the label
+      const first = pages[0];
+      if (!first.image) return;
+      const blob = await (await fetch(first.image)).blob();
+      const dataUrl = await new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(blob); });
+      const summary = pages.map((p) => p.title).join(' · ').slice(0, 80);
+      const res = await fetch(API + '/api/story/render', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageUrl: dataUrl,
-          title: '9jaWonderPal',
-          subtitle: promptText.slice(0, 80),
-          durationSec: 6,
-        }),
+        body: JSON.stringify({ imageUrl: dataUrl, title: first.title || 'My Book', subtitle: summary, durationSec: 6 }),
       });
-      const j = await res2.json();
+      const j = await res.json();
       if (j.url) setStoryUrl(j.url);
     } catch (e) {
       console.error('share failed', e);
     } finally {
       setGeneratingStory(false);
     }
-  }
-
-  async function onAnimate() {
-    if (animating) return;
-    const prompt = history.join('. ');
-    if (!prompt) return;
-    try {
-      setAnimating(true);
-      setVideoUrl(null);
-      const render = useStudioStore.getState().lastRender;
-      const imageUrl = render && render.preview
-        ? (render.preview.startsWith('http') ? render.preview : API + render.preview)
-        : null;
-      const res = await fetch(API + '/api/animate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, imageUrl, durationSec: 5 }),
-      });
-      const j = await res.json();
-      if (j.videoUrl) setVideoUrl(j.videoUrl);
-    } catch (e) {
-      console.error('animate failed', e);
-    } finally {
-      setAnimating(false);
-    }
-  }
+  };
 
   const warm = mood.primary;
-  const busy = phase !== 'idle' && phase !== 'done';
 
-  /* ---------- Render ---------- */
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', background: '#0a0812', overflow: 'hidden' }}>
-      <SpatialViewport className="viewport" />
-      <CompanionOverlay />
-
-      {showReference && refData && (
-        <ReferencePanel
-          data={refData}
-          loading={refLoading}
-          onDismiss={() => { dismissRef(); setShowReference(false); }}
-          mood={mood}
-          prompt={lastPrompt}
-        />
-      )}
+      <BookView />
 
       {/* Top status chip */}
       <div style={{
         position: 'absolute', top: 18, left: '50%', transform: 'translateX(-50%)',
-        display: 'flex', alignItems: 'center', gap: 12, padding: '8px 18px',
+        display: 'flex', alignItems: 'center', gap: 10, padding: '8px 18px',
         borderRadius: 30, background: 'rgba(10,8,18,0.85)', backdropFilter: 'blur(14px)',
         border: '1px solid ' + warm + '44', color: warm, fontSize: 13, fontWeight: 700,
         zIndex: 15, maxWidth: '90vw',
       }}>
-        <Sparkles size={14} /> {PHASE_TEXT[phase] || 'Ready'}
+        <Sparkles size={14} />
+        {busy ? 'Writing your page…' : (pages.length ? pages.length + ' page' + (pages.length === 1 ? '' : 's') + ' so far' : 'Ready when you are!')}
       </div>
+
+      {stickers.length > 0 && (
+        <div style={{
+          position: 'absolute', top: 18, left: 18, zIndex: 15,
+          display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+          borderRadius: 14, background: 'rgba(10,8,18,0.85)', backdropFilter: 'blur(14px)',
+          border: '1px solid ' + warm + '55',
+        }}>
+          <Award size={14} color={warm} />
+          <span style={{ color: warm, fontSize: 11, fontWeight: 800, letterSpacing: 0.6 }}>
+            {stickers.length} {stickers.length === 1 ? 'sticker' : 'stickers'}
+          </span>
+          <div style={{ display: 'flex', gap: 2, maxWidth: 120, overflow: 'hidden' }}>
+            {stickers.slice(-6).map((s2, i) => (
+              <span key={i} style={{ fontSize: 16 }}>{s2.emoji}</span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Right-side controls */}
       <div style={{ position: 'absolute', top: 18, right: 18, display: 'flex', flexDirection: 'column', gap: 8, zIndex: 15 }}>
         <button onClick={toggleMuted} title={muted ? 'Unmute' : 'Mute'} style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(10,8,18,0.85)', backdropFilter: 'blur(14px)', border: '1px solid ' + warm + '55', color: warm, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
         </button>
-        <button onClick={() => setShowHistory((v) => !v)} title="Your worlds" style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(10,8,18,0.85)', backdropFilter: 'blur(14px)', border: '1px solid ' + warm + '55', color: warm, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <button onClick={() => setShowHistory((v) => !v)} title="My books" style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(10,8,18,0.85)', backdropFilter: 'blur(14px)', border: '1px solid ' + warm + '55', color: warm, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <History size={18} />
         </button>
-        <button onClick={() => setShowSearch(true)} title="Find an image" style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(10,8,18,0.85)', backdropFilter: 'blur(14px)', border: '1px solid ' + warm + '55', color: warm, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Sparkles size={18} />
-        </button>
-        {objectCount > 0 && lastRender?.preview && (
-          <button onClick={onShare} disabled={generatingStory} title="Make a video" style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, #25D366, #128C7E)', border: 'none', color: '#fff', cursor: generatingStory ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: generatingStory ? 0.6 : 1 }}>
+        {pages.length > 0 && (
+          <button onClick={onShare} disabled={generatingStory} title="Make a video of this book" style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, #25D366, #128C7E)', border: 'none', color: '#fff', cursor: generatingStory ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: generatingStory ? 0.6 : 1 }}>
             <Share2 size={18} />
           </button>
         )}
-        {objectCount > 0 && (
-          <button onClick={onAnimate} disabled={animating} title="Make it move" style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, #f472b6, #a78bfa)', border: 'none', color: '#fff', cursor: animating ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: animating ? 0.6 : 1 }}>
-            <Film size={18} />
-          </button>
-        )}
-        {objectCount > 0 && (
-          <button onClick={onSave} title="Save this world" style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, ' + warm + ', ' + mood.accent + ')', border: 'none', color: '#000', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {pages.length > 0 && (
+          <button onClick={onSave} title="Save this book" style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, ' + warm + ', ' + mood.accent + ')', border: 'none', color: '#000', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Save size={18} />
           </button>
         )}
-        {objectCount > 0 && (
-          <button onClick={() => clearScene()} title="Start a new world" style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(10,8,18,0.85)', backdropFilter: 'blur(14px)', border: '1px solid rgba(239,68,68,0.5)', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {pages.length > 0 && (
+          <button onClick={clearPages} title="Start a new book" style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(10,8,18,0.85)', backdropFilter: 'blur(14px)', border: '1px solid rgba(239,68,68,0.5)', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <RotateCcw size={18} />
           </button>
         )}
       </div>
 
-      {/* Toasts and overlays */}
-      {animating && (
-        <div style={{ position: 'absolute', bottom: 120, left: '50%', transform: 'translateX(-50%)', padding: '12px 22px', borderRadius: 16, background: 'rgba(244,114,182,0.2)', border: '1px solid #f472b6', color: '#f472b6', fontSize: 13, fontWeight: 700, zIndex: 25 }}>
-          Making your world move… 30-90s
-        </div>
-      )}
-      {videoUrl && (
-        <video
-          src={videoUrl}
-          autoPlay loop muted playsInline
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#0a0812', zIndex: 12 }}
-        />
-      )}
-      {videoUrl && (
-        <button onClick={() => setVideoUrl(null)} style={{ position: 'absolute', top: 76, left: 18, padding: '8px 14px', borderRadius: 12, background: 'rgba(10,8,18,0.85)', backdropFilter: 'blur(14px)', border: '1px solid ' + warm + '55', color: warm, fontSize: 12, fontWeight: 700, cursor: 'pointer', zIndex: 25 }}>
-          Back to still
-        </button>
-      )}
+      {/* Toasts */}
       {generatingStory && (
         <div style={{ position: 'absolute', top: 76, left: 18, padding: '10px 18px', borderRadius: 14, background: 'rgba(37,211,102,0.2)', border: '1px solid #25D366', color: '#25D366', fontSize: 13, fontWeight: 700, zIndex: 20 }}>
-          Making a video…
+          Making a video of your book…
         </div>
       )}
       {storyUrl && (
@@ -252,7 +191,7 @@ export default function ChildMode() {
       )}
       {savedToast && (
         <div style={{ position: 'absolute', top: 76, right: 18, padding: '10px 18px', borderRadius: 14, background: 'rgba(34,197,94,0.2)', border: '1px solid #22c55e', color: '#22c55e', fontSize: 13, fontWeight: 700, zIndex: 20 }}>
-          Saved to your worlds!
+          Saved!
         </div>
       )}
 
@@ -277,21 +216,23 @@ export default function ChildMode() {
           placeholder={listening ? 'I am listening…' : 'What do you want to make?'}
           autoComplete="off"
           spellCheck={false}
+          disabled={busy}
           style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 17, padding: '12px 0', fontWeight: 500 }}
         />
         <button
           type="button"
           onClick={toggleVoice}
-          disabled={!supported}
+          disabled={!supported || busy}
           title={listening ? 'Stop' : 'Talk to 9jaWonderPal'}
           style={{
             width: 64, height: 64, borderRadius: '50%',
             background: listening ? 'linear-gradient(135deg,#ffb700,#ff6b00)' : 'linear-gradient(135deg,' + warm + ',' + mood.accent + ')',
             border: 'none', color: listening ? '#fff' : '#000',
-            cursor: supported ? 'pointer' : 'not-allowed',
+            cursor: (supported && !busy) ? 'pointer' : 'not-allowed',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             animation: listening ? 'micPulse 1.2s ease-in-out infinite' : 'none',
             boxShadow: listening ? '0 0 24px rgba(255,183,0,0.6)' : 'none',
+            opacity: busy ? 0.5 : 1,
             transition: 'all .2s',
           }}
         >
@@ -299,15 +240,7 @@ export default function ChildMode() {
         </button>
       </form>
 
-      {/* Worlds drawer */}
-      {showHistory && <WorldsDrawer onClose={() => setShowHistory(false)} />}
-
-      {/* Image search */}
-      <ImageSearchPanel
-        open={showSearch}
-        onClose={() => setShowSearch(false)}
-        initialQuery={lastPrompt}
-      />
+      {showHistory && <BooksDrawer onClose={() => setShowHistory(false)} />}
 
       <style>{`
         @keyframes micPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
@@ -316,42 +249,51 @@ export default function ChildMode() {
   );
 }
 
-/* ---------- Worlds Drawer ---------- */
-function WorldsDrawer({ onClose }) {
+function BooksDrawer({ onClose, onPlay }) {
   const worlds = useStudioStore((s) => s.worlds);
-  const loadWorld = useStudioStore((s) => s.loadWorld);
+  const loadBook = useStudioStore((s) => s.loadBook);
   const deleteWorld = useStudioStore((s) => s.deleteWorld);
   const warm = useStudioStore((s) => s.mood.primary);
+  const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5000').replace(/\/$/, '');
+
+  const resolve = (u) => {
+    if (!u) return null;
+    if (/^https?:\/\//.test(u)) return u;
+    if (u.startsWith('/')) return API + u;
+    return API + '/' + u;
+  };
 
   return (
-    <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(360px, 92vw)', background: 'rgba(10,8,18,0.97)', backdropFilter: 'blur(24px)', borderLeft: '1px solid ' + warm + '44', zIndex: 30, display: 'flex', flexDirection: 'column', animation: 'drawerIn .28s ease' }}>
+    <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(400px, 92vw)', background: 'rgba(10,8,18,0.97)', backdropFilter: 'blur(24px)', borderLeft: '1px solid ' + warm + '44', zIndex: 30, display: 'flex', flexDirection: 'column', animation: 'drawerIn .28s ease' }}>
       <div style={{ padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ color: warm, fontWeight: 800, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <BookOpen size={15} /> My Worlds
+          <BookOpen size={15} /> My Books ({worlds.length})
         </div>
         <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 13 }}>Close</button>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
         {worlds.length === 0 && (
           <div style={{ color: '#64748b', fontSize: 13, textAlign: 'center', padding: 40 }}>
-            Your saved worlds will appear here. Make something and tap the save button.
+            Your saved books will appear here. Make something and tap the save button (purple circle).
           </div>
         )}
-        {worlds.map((w) => {
-          const img = w.preview
-            ? (w.preview.startsWith('http') ? w.preview : (w.preview.startsWith('/') ? (API + w.preview) : (API + '/renders/' + w.preview)))
-            : null;
-          return (
-            <div key={w.id} style={{ marginBottom: 14, padding: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14 }}>
-              {img && <img src={img} alt="" style={{ width: '100%', borderRadius: 10, marginBottom: 10, display: 'block' }} />}
-              <div style={{ color: '#e2e8f0', fontSize: 13, lineHeight: 1.4, marginBottom: 8 }}>{w.promptSummary}</div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => { loadWorld(w.id); onClose(); }} style={{ flex: 1, padding: '6px 10px', borderRadius: 8, background: warm, color: '#000', border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Load</button>
-                <button onClick={() => deleteWorld(w.id)} style={{ padding: '6px 10px', borderRadius: 8, background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', fontSize: 11, cursor: 'pointer' }}>Delete</button>
-              </div>
+        {worlds.map((w) => (
+          <div key={w.id} style={{ marginBottom: 14, padding: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14 }}>
+            {w.preview && <img src={resolve(w.preview)} alt="" style={{ width: '100%', borderRadius: 10, marginBottom: 10, display: 'block' }} />}
+            <div style={{ color: '#e2e8f0', fontSize: 13, lineHeight: 1.4, marginBottom: 4, fontWeight: 700 }}>{w.promptSummary}</div>
+            <div style={{ color: '#64748b', fontSize: 11, marginBottom: 10 }}>
+              {w.pages ? w.pages.length + ' page' + (w.pages.length === 1 ? '' : 's') : ''}
+              {w.ts ? ' · ' + new Date(w.ts).toLocaleDateString() : ''}
             </div>
-          );
-        })}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => { loadBook(w.id); onClose(); }} style={{ flex: 1, padding: '8px 10px', borderRadius: 8, background: warm, color: '#000', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Open</button>
+              {w.videoUrl && (
+                <button onClick={() => { onPlay(w.videoUrl); onClose(); }} style={{ padding: '8px 12px', borderRadius: 8, background: 'linear-gradient(135deg, #25D366, #128C7E)', color: '#fff', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}><Play size={12} /> Video</button>
+              )}
+              <button onClick={() => deleteWorld(w.id)} style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', fontSize: 12, cursor: 'pointer' }}>Delete</button>
+            </div>
+          </div>
+        ))}
       </div>
       <style>{`@keyframes drawerIn { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
     </div>

@@ -1,6 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Camera, Sparkles, X, Volume2, VolumeX, Loader2 } from 'lucide-react';
 
+function resolveUrl(u) {
+  if (!u) return null;
+  if (/^https?:\/\//.test(u)) return u;
+  const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5000').replace(/\/$/, '');
+  if (u.startsWith('/')) return API + u;
+  return API + '/' + u;
+}
+
+
 const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5000').replace(/\/$/, '');
 
 export default function ReferencePanel({ data, loading, onDismiss, mood, prompt }) {
@@ -117,7 +126,7 @@ export default function ReferencePanel({ data, loading, onDismiss, mood, prompt 
         )}
         {!imgFailed && data && data.thumb && (
           <img
-            src={data.thumb}
+            src={resolveUrl(data.thumb)}
             alt={prompt}
             onError={() => setImgFailed(true)}
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}

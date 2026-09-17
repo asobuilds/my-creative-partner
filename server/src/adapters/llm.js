@@ -197,8 +197,18 @@ export async function* streamChat(messages, opts = {}) {
 }
 
 export async function completeJSON(messages, opts = {}) {
+  const _t0 = Date.now();
   let raw = '';
-  for await (const delta of streamChat(messages, { ...opts, json: true })) raw += delta;
+  try {
+    for await (const delta of streamChat(messages, { ...opts, json: true })) raw += delta;
+  } catch (e) {
+    console.error('[llm] completeJSON stream threw after ' + (Date.now() - _t0) + 'ms:', e.message);
+    throw e;
+  }
+  console.log('[llm] completeJSON raw len=' + raw.length + ' in ' + (Date.now() - _t0) + 'ms, first 120 chars: ' + raw.slice(0, 120));
   const cleaned = raw.trim().replace(/^```json\s*/i, '').replace(/```$/, '').trim();
-  try { return JSON.parse(cleaned); } catch (e) { return null; }
+  try { return JSON.parse(cleaned); } catch (e) {
+    console.error('[llm] JSON parse failed. Tail:', cleaned.slice(-200));
+    return null;
+  }
 }

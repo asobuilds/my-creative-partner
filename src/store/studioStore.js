@@ -77,6 +77,42 @@ export const useStudioStore = create((set, get) => ({
   companionDismiss: () => set((s) => ({ companion: { ...s.companion, visible: false } })),
 
   /* Voice */
+  pages: [],
+  stickers: [],
+  addSticker: (emoji) => set((s) => ({ stickers: [...s.stickers, { emoji, ts: Date.now() }] })),
+  clearStickers: () => set({ stickers: [] }),
+  addPage: (page) => set((s) => ({ pages: [...s.pages, page] })),
+  saveCurrentBook: () => {
+    const state = get();
+    if (!state.pages.length) return null;
+    const first = state.pages[0];
+    const book = {
+      id: 'book-' + Date.now(),
+      ts: Date.now(),
+      preview: first.image || null,
+      promptSummary: state.pages.map((p) => p.title).join(' · ').slice(0, 120) || 'A new book',
+      pages: state.pages.map((p) => ({ ...p })),
+      stickerCount: state.pages.length,
+    };
+    const next = [book, ...state.worlds].slice(0, 30);
+    try { localStorage.setItem('9jawonderpal.books', JSON.stringify(next)); } catch (e) {}
+    set({ worlds: next });
+    return book;
+  },
+  loadBook: (id) => {
+    const book = get().worlds.find((w) => w.id === id);
+    if (!book) return null;
+    set({ pages: book.pages || [] });
+    return book;
+  },
+  attachVideoToBook: (bookId, videoUrl) => {
+    const next = get().worlds.map((w) => w.id === bookId ? { ...w, videoUrl } : w);
+    try { localStorage.setItem('9jawonderpal.books', JSON.stringify(next)); } catch (e) {}
+    set({ worlds: next });
+  },
+  updatePage: (id, patch) => set((s) => ({ pages: s.pages.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
+  deletePage: (id) => set((s) => ({ pages: s.pages.filter((p) => p.id !== id) })),
+  clearPages: () => set({ pages: [] }),
   voiceMuted: false,
   toggleVoiceMuted: () => set((s) => ({ voiceMuted: !s.voiceMuted })),
 

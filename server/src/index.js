@@ -33,6 +33,7 @@ app.use(express.json({ limit: '2mb' }));
 app.use('/renders', express.static(process.env.BLENDER_OUTPUT_PATH || '/tmp/synthetix-renders'));
 app.use('/refined', express.static(path.join(os.tmpdir(), 'synthetix-refine')));
 app.use('/models', express.static(path.join(os.tmpdir(), 'synthetix-models')));
+app.use('/images', express.static(path.join(os.tmpdir(), 'synthetix-images')));
 
 app.get('/health', (_req, res) =>
   res.json({

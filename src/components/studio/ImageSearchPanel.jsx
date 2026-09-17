@@ -2,6 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Search, X, Loader2, Plus } from 'lucide-react';
 import { useStudioStore } from '../../store/studioStore';
 
+function resolveUrl(u) {
+  if (!u) return null;
+  if (/^https?:\/\//.test(u)) return u;
+  const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5000').replace(/\/$/, '');
+  if (u.startsWith('/')) return API + u;
+  return API + '/' + u;
+}
+
+
 const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5000').replace(/\/$/, '');
 
 export default function ImageSearchPanel({ open, onClose, initialQuery }) {
@@ -94,7 +103,7 @@ export default function ImageSearchPanel({ open, onClose, initialQuery }) {
           {results.map((img) => (
             <div key={img.id} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
               <img
-                src={img.thumb}
+                src={resolveUrl(img.thumb)}
                 alt={img.title}
                 loading="lazy"
                 style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', display: 'block' }}
