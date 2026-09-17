@@ -21,6 +21,7 @@ import mountStory from './routes/story.js';
 import mountReference from './routes/reference.js';
 import mountAnimate from './routes/animate.js';
 import mountAssets from './routes/assets.js';
+import mountSpeak from './routes/speak.js';
 
 const PORT = Number(process.env.PORT) || 5000;
 const ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
@@ -30,6 +31,7 @@ app.use(cors({ origin: ORIGIN, credentials: true }));
 app.use(express.json({ limit: '2mb' }));
 app.use('/renders', express.static(process.env.BLENDER_OUTPUT_PATH || '/tmp/synthetix-renders'));
 app.use('/refined', express.static(path.join(os.tmpdir(), 'synthetix-refine')));
+app.use('/models', express.static(path.join(os.tmpdir(), 'synthetix-models')));
 
 app.get('/health', (_req, res) =>
   res.json({
@@ -67,6 +69,7 @@ mountStory(app);
 mountReference(app);
 mountAnimate(app);
 mountAssets(app);
+mountSpeak(app);
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/api/stream' });
 
