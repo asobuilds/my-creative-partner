@@ -1,0 +1,145 @@
+/**
+ * Curated Nigerian cultural seed data.
+ * The LLM enriches these; they ensure accuracy on common subjects.
+ */
+
+export const SEED = {
+  lion: {
+    en: 'Lion',
+    yoruba: 'Kìnìún',
+    igbo: 'Ọdụm',
+    hausa: 'Zaki',
+    pidgin: 'Layon',
+    fact: 'A lion sleeps up to 20 hours a day. They hunt in family groups called prides.',
+    proverb: { text: 'Bí a bá ní kùn, a kì í ṣe ọ̀run', meaning: 'If we have a lion, we do not fear the sun.', lang: 'Yoruba' },
+    history: 'The lion appears on the coat of arms of Nigeria\'s northern emirates, symbolising courage.',
+  },
+  elephant: {
+    en: 'Elephant',
+    yoruba: 'Erin',
+    igbo: 'Enyi',
+    hausa: 'Giwa',
+    pidgin: 'Elepant',
+    fact: 'Elephants greet each other by touching trunks, like a handshake.',
+    proverb: { text: 'Erin kì í ṣe méjì nínú ọ̀gàn', meaning: 'Two elephants are not found in the same thicket.', lang: 'Yoruba' },
+    history: 'Elephants lived in ancient Yoruba forests. The Ìjẹ̀bú people named villages after them.',
+  },
+  tortoise: {
+    en: 'Tortoise',
+    yoruba: 'Ìjàpá',
+    igbo: 'Mbe',
+    hausa: 'Kunkuru',
+    pidgin: 'Tostos',
+    fact: 'Some tortoises live over 100 years — the oldest record is 188.',
+    proverb: { text: 'Ìjàpá kì í jẹ gbé ààyò', meaning: 'The tortoise does not eat what the chameleon eats.', lang: 'Yoruba' },
+    history: 'Ìjàpá is the trickster hero of Yoruba folktales — clever, funny, and always up to something.',
+  },
+  eagle: {
+    en: 'Eagle',
+    yoruba: 'Idì',
+    igbo: 'Ugo',
+    hausa: 'Gaggafa',
+    pidgin: 'Igo',
+    fact: 'An eagle can see a rabbit from 3 kilometres away.',
+    proverb: { text: 'Ẹyẹ tó bá ń fò lọ sókè kì í wo ẹ̀yìn', meaning: 'A bird that flies upward does not look back.', lang: 'Yoruba' },
+    history: 'The eagle is a symbol of vision and kingship across many Nigerian cultures.',
+  },
+  drum: {
+    en: 'Talking Drum',
+    yoruba: 'Gángan',
+    igbo: 'Igba',
+    hausa: 'Kalangu',
+    pidgin: 'Toking Dram',
+    fact: 'The talking drum can imitate the tones of Yoruba words. Drummers send real messages.',
+    proverb: { text: 'À ń lù ìlù, a sì ń jó', meaning: 'We drum and we dance.', lang: 'Yoruba' },
+    history: 'Talking drums were used to announce kings, warn of danger, and call people to festivals.',
+  },
+  tree: {
+    en: 'Tree',
+    yoruba: 'Igi',
+    igbo: 'Osisi',
+    hausa: 'Itaci',
+    pidgin: 'Tri',
+    fact: 'The iroko tree can live over 500 years and grows up to 50 metres tall.',
+    proverb: { text: 'Igi kan kì í dá igbó ṣe', meaning: 'One tree does not make a forest.', lang: 'Yoruba' },
+    history: 'The iroko is sacred in many Yoruba communities — believed to house spirits.',
+  },
+  moon: {
+    en: 'Moon',
+    yoruba: 'Òṣùpá',
+    igbo: 'Ọnwa',
+    hausa: 'Wata',
+    pidgin: 'Mun',
+    fact: 'The moon is not a light — it reflects the sun, like a mirror in the sky.',
+    proverb: { text: 'Òṣùpá ń pọ́n, ojú ọ̀run ń mọ́', meaning: 'The moon shines bright, the sky is clear.', lang: 'Yoruba' },
+    history: 'Many Nigerian communities plan farming by the moon — planting at the new moon, harvesting at the full.',
+  },
+  river: {
+    en: 'River',
+    yoruba: 'Odò',
+    igbo: 'Osimiri',
+    hausa: 'Kogi',
+    pidgin: 'Riva',
+    fact: 'The Niger River is the third-longest river in Africa — 4,180 kilometres long.',
+    proverb: { text: 'Odò kì í gbàgbé orísun rẹ̀', meaning: 'A river never forgets its source.', lang: 'Yoruba' },
+    history: 'The Niger and Benue rivers meet at Lokoja — the "Y" shape is what gives Nigeria its name.',
+  },
+  king: {
+    en: 'King',
+    yoruba: 'Ọba',
+    igbo: 'Eze',
+    hausa: 'Sarki',
+    pidgin: 'King',
+    fact: 'A Yoruba king wears a beaded crown with a veil that hides his face during ceremonies.',
+    proverb: { text: 'Ọba kì í ṣe aláìlẹ́gbẹ́', meaning: 'A king is never without his people.', lang: 'Yoruba' },
+    history: 'The Ọọ̀ni of Ifẹ̀ and the Ọba of Benin trace their lineages back over 1,000 years.',
+  },
+  fire: {
+    en: 'Fire',
+    yoruba: 'Iná',
+    igbo: 'Ọkụ',
+    hausa: 'Wuta',
+    pidgin: 'Faya',
+    fact: 'The first human fire was probably started by rubbing two sticks together — 1 million years ago.',
+    proverb: { text: 'Iná kì í jó ẹni tó bá fi ọwọ́ rọ̀', meaning: 'Fire does not burn the one who tends it.', lang: 'Yoruba' },
+    history: 'In Yoruba cosmology, Iná is a sacred force — the blacksmith god Ògún works with it.',
+  },
+  fish: {
+    en: 'Fish',
+    yoruba: 'Ẹja',
+    igbo: 'Azụ',
+    hausa: 'Kifi',
+    pidgin: 'Fis',
+    fact: 'Nigeria has over 300 species of freshwater fish in its rivers and lakes.',
+    proverb: { text: 'Ẹja tí kò lẹ́sẹ̀, ẹ̀rù kì í bà á', meaning: 'A fish without legs has nothing to fear.', lang: 'Yoruba' },
+    history: 'Fishing is one of the oldest trades in Nigeria — dried fish was traded as far north as the Sahara.',
+  },
+  rain: {
+    en: 'Rain',
+    yoruba: 'Òjò',
+    igbo: 'Mmiri ozuzo',
+    hausa: 'Ruwa',
+    pidgin: 'Ren',
+    fact: 'The harmattan wind and the rainy season meet in Nigeria — the rainiest place gets 4 metres of water a year.',
+    proverb: { text: 'Òjò kì í rọ̀ tí kò fi ojú kan ilẹ̀', meaning: 'Rain never falls without touching the ground.', lang: 'Yoruba' },
+    history: 'Rainmakers were respected in many Nigerian communities — prayers for rain were communal events.',
+  },
+  child: {
+    en: 'Child',
+    yoruba: 'Ọmọ',
+    igbo: 'Nwa',
+    hausa: 'Yaro',
+    pidgin: 'Pikin',
+    fact: 'In Yoruba tradition, a child is celebrated at eight days old with a naming ceremony.',
+    proverb: { text: 'Ọmọ tí a kò kọ́ ni yóò gbé ilé tí a kọ́ tà', meaning: 'A child we do not teach will sell the house we built.', lang: 'Yoruba' },
+    history: 'Twin children (ìbejì) are especially honoured in Yoruba culture — they have their own festival.',
+  },
+};
+
+export function lookupSubject(prompt) {
+  const lower = String(prompt || '').toLowerCase();
+  for (const key of Object.keys(SEED)) {
+    if (lower.includes(key)) return { ...SEED[key], _key: key };
+  }
+  return null;
+}

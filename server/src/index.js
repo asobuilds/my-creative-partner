@@ -20,6 +20,7 @@ import mountStory from './routes/story.js';
 import mountReference from './routes/reference.js';
 import mountAnimate from './routes/animate.js';
 import mountAssets from './routes/assets.js';
+import mountStoryPage from './routes/storyPage.js';
 import mountSpeak from './routes/speak.js';
 import mountImageSearch from './routes/imageSearch.js';
 
@@ -68,6 +69,7 @@ mountStory(app);
 mountReference(app);
 mountAnimate(app);
 mountAssets(app);
+mountStoryPage(app);
 mountSpeak(app);
 mountImageSearch(app);
 const server = http.createServer(app);
