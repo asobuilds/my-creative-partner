@@ -2,6 +2,8 @@ import { streamChat, completeJSON, llmReady } from '../adapters/llm.js';
 import { streamReflection } from '../companion/philosophy.js';
 import { buildScene, blenderReady } from '../adapters/blender.js';
 import { generateTripoMesh, tripoReady } from '../adapters/tripo.js';
+import { generateHunyuanMesh } from '../adapters/hunyuan.js';
+import { shouldTry, markFailed } from '../adapters/creditGuard.js';
 import { findPolyHavenMatch, downloadPolyHavenModel } from '../adapters/download3d.js';
 import { detectConcreteSubject } from '../adapters/subjectMatch.js';
 
@@ -165,8 +167,27 @@ export class NodePipelineRouter {
         }
       }
 
-      // Path A: Tripo3D (real textured mesh)
-      if (!glb && tripoReady && !signal.aborted) {
+      // Path A0: Hunyuan3D-2 (free, open-weight, best quality-per-cost)
+      if (!glb && !signal.aborted) {
+        this.state = STATE.RENDERING;
+        this._emit({ type: 'phase', phase: 'rendering' });
+        try {
+          console.log('[hunyuan] generating mesh...');
+          const hy = await generateHunyuanMesh(refined || prompt);
+          if (hy.glbUrl) {
+            glb = hy.glbUrl;
+            source = 'hunyuan';
+            console.log('[hunyuan] success ->', glb);
+          } else {
+            console.log('[hunyuan] no glb returned');
+          }
+        } catch (e) {
+          console.warn('[hunyuan] failed:', e.message);
+        }
+      }
+
+      // Path A: Tripo3D (paid fallback)
+      if (!glb && tripoReady && !signal.aborted && shouldTry('tripo')) {
         this.state = STATE.RENDERING;
         this._emit({ type: 'phase', phase: 'rendering' });
         try {
@@ -177,7 +198,8 @@ export class NodePipelineRouter {
           source = 'tripo';
           console.log('[tripo] success ->', glb);
         } catch (e) {
-          console.warn('[tripo] failed, falling back to Blender:', e.message);
+          console.warn('[tripo] failed:', e.message);
+          if (/40[23]|credit|auth/i.test(e.message)) markFailed('tripo', e.message.slice(0, 80));
         }
       }
 

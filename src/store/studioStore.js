@@ -39,6 +39,12 @@ export const useStudioStore = create((set, get) => ({
   /* Scene */
   sceneObjects: [],
   sceneHistory: [],
+  patchSceneObject: (id, patch) =>
+    set((s) => ({
+      sceneObjects: s.sceneObjects.map((o) => (o.id === id ? { ...o, ...patch } : o)),
+    })),
+  deleteSceneObject: (id) =>
+    set((s) => ({ sceneObjects: s.sceneObjects.filter((o) => o.id !== id) })),
   upsertSceneObject: (obj) =>
     set((s) => {
       const i = s.sceneObjects.findIndex((o) => o.id === obj.id);

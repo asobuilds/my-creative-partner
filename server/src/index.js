@@ -7,7 +7,6 @@ import cors from 'cors';
 import { WebSocketServer } from 'ws';
 import { NodePipelineRouter } from './router/NodePipelineRouter.js';
 import { llmReady, providerStatus } from './adapters/llm.js';
-import { meshReady } from './adapters/mesh.js';
 import { ttsReady } from './adapters/tts.js';
 import { mediaReady } from './adapters/media.js';
 import { videoReady } from './adapters/video.js';
@@ -22,6 +21,7 @@ import mountReference from './routes/reference.js';
 import mountAnimate from './routes/animate.js';
 import mountAssets from './routes/assets.js';
 import mountSpeak from './routes/speak.js';
+import mountImageSearch from './routes/imageSearch.js';
 
 const PORT = Number(process.env.PORT) || 5000;
 const ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
@@ -38,7 +38,6 @@ app.get('/health', (_req, res) =>
     ok: true,
     llm: llmReady,
     providers: providerStatus,
-    mesh: meshReady,
     tts: ttsReady,
     media: mediaReady,
     video: videoReady,
@@ -70,6 +69,7 @@ mountReference(app);
 mountAnimate(app);
 mountAssets(app);
 mountSpeak(app);
+mountImageSearch(app);
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/api/stream' });
 

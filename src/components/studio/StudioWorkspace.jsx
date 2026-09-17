@@ -5,11 +5,17 @@ import NodePalette from './NodePalette';
 import HUD from './HUD';
 import CompanionOverlay from './CompanionOverlay';
 import RenderPreview from './RenderPreview';
+import ImageSearchPanel from './ImageSearchPanel';
 import { useResponsive } from '../../hooks/useResponsive';
 import { usePromptEngine } from '../../hooks/usePromptEngine';
 import { startMoodSync } from '../../engine/moodEngine';
 import { useStudioStore } from '../../store/studioStore';
 import { Layers, Sliders, ScrollText } from 'lucide-react';
+
+function useSearchState() {
+  const [showSearch, setShowSearch] = useState(false);
+  return { showSearch, setShowSearch };
+}
 
 function useBoot() {
   const { engine, cancel } = usePromptEngine();
@@ -18,7 +24,7 @@ function useBoot() {
   return { engine, cancel, streamStatus };
 }
 
-function DesktopLayout({ engine, cancel, streamStatus }) {
+function DesktopLayout({ engine, cancel, streamStatus, showSearch, setShowSearch }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 420px', height: '100%' }}>
       <aside style={{ borderRight: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15,23,42,0.55)' }}>
@@ -29,6 +35,10 @@ function DesktopLayout({ engine, cancel, streamStatus }) {
         <HUD engine={engine} cancel={cancel} streamStatus={streamStatus} />
         <CompanionOverlay />
         <RenderPreview />
+        <button onClick={() => setShowSearch(true)} title="Find an image" style={{ position: 'absolute', top: 74, right: 24, zIndex: 19, width: 44, height: 44, borderRadius: 12, background: 'rgba(10,8,18,0.85)', backdropFilter: 'blur(14px)', border: '1px solid rgba(0,240,255,0.5)', color: '#00f0ff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: 20 }}>+</span>
+        </button>
+        <ImageSearchPanel open={showSearch} onClose={() => setShowSearch(false)} initialQuery="" />
       </main>
       <aside style={{ borderLeft: '1px solid rgba(255,255,255,0.08)', background: 'rgba(9,13,22,0.65)' }}>
         <FlowCanvas />

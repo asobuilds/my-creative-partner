@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { searchAll, mediaReady } from '../adapters/media.js';
 import { higgsfieldReady, generateImage } from '../adapters/higgsfield.js';
 import { aiImageUrl } from '../adapters/freeImage.js';
+import { shouldTry, markFailed } from '../adapters/creditGuard.js';
 import { enrichQuery } from '../adapters/africanEnhancer.js';
 import { completeJSON, llmReady } from '../adapters/llm.js';
 
@@ -55,7 +56,7 @@ export default function mountReference(app) {
     const result = { query, prompt: raw, source: null, url: null, thumb: null, credit: null, ai: false };
 
     // 1. Higgsfield (best, needs credits)
-    if ((mode === 'ai' || mode === 'auto') && higgsfieldReady) {
+    if ((mode === 'ai' || mode === 'auto') && higgsfieldReady && shouldTry('higgsfield')) {
       try {
         const url = await generateImage(
           'a realistic photograph of a ' + enriched + ', natural lighting, high detail, single subject, no text',
@@ -67,6 +68,7 @@ export default function mountReference(app) {
         }
       } catch (e) {
         console.warn('[reference] higgsfield failed:', e.message);
+        if (/40[23]|credit/i.test(e.message)) markFailed('higgsfield', e.message.slice(0, 60));
       }
     }
 
