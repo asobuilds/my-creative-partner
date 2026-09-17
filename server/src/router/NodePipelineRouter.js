@@ -2,6 +2,8 @@ import { streamChat, completeJSON, llmReady } from '../adapters/llm.js';
 import { streamReflection } from '../companion/philosophy.js';
 import { buildScene, blenderReady } from '../adapters/blender.js';
 import { generateTripoMesh, tripoReady } from '../adapters/tripo.js';
+import { findPolyHavenMatch, downloadPolyHavenModel } from '../adapters/download3d.js';
+import { detectConcreteSubject } from '../adapters/subjectMatch.js';
 
 const STATE = { IDLE: 'IDLE', PLANNING: 'PLANNING', STREAMING: 'STREAMING', RENDERING: 'RENDERING', REFLECTING: 'REFLECTING', DONE: 'DONE', ERROR: 'ERROR' };
 
@@ -141,12 +143,34 @@ export class NodePipelineRouter {
       /* 4. BLENDER RENDER */
       let preview = null, glb = null, source = null;
 
+      // Path 0: PolyHaven real model lookup (fast, CC0, no key)
+      const subject = detectConcreteSubject(prompt);
+      if (subject && !signal.aborted) {
+        this.state = STATE.RENDERING;
+        this._emit({ type: 'phase', phase: 'rendering' });
+        console.log('[polyhaven] looking for match:', subject);
+        try {
+          const matchId = await findPolyHavenMatch(subject);
+          if (matchId) {
+            console.log('[polyhaven] matched:', matchId);
+            const url = await downloadPolyHavenModel(matchId);
+            glb = 'http://localhost:5000' + url;
+            source = 'polyhaven';
+            console.log('[polyhaven] using real model:', glb);
+          } else {
+            console.log('[polyhaven] no match for', subject);
+          }
+        } catch (e) {
+          console.warn('[polyhaven] failed:', e.message);
+        }
+      }
+
       // Path A: Tripo3D (real textured mesh)
-      if (tripoReady && !signal.aborted) {
+      if (!glb && tripoReady && !signal.aborted) {
         this.state = STATE.RENDERING;
         this._emit({ type: 'phase', phase: 'rendering' });
         try {
-          const richPrompt = objects.map(o => o.kind + ' in ' + o.color).join(', ') + '. ' + (refined || prompt);
+          const richPrompt = (refined || prompt) + ', ' + objects.map(o => o.kind + ' in ' + o.color).join(', ');
           const tripo = await generateTripoMesh(richPrompt, { faceLimit: 50000 });
           glb = tripo.modelUrl;
           preview = tripo.renderedImageUrl;

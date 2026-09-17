@@ -56,3 +56,36 @@ export async function downloadPolyHavenModel(id) {
 }
 
 export const MODEL_CACHE_DIR = CACHE_DIR;
+
+
+/**
+ * Search PolyHaven's catalog for a model matching a subject word.
+ * Returns the model ID if a good match is found, otherwise null.
+ */
+export async function findPolyHavenMatch(subject) {
+  try {
+    const listRes = await fetch('https://api.polyhaven.com/assets?t=models', {
+      headers: { 'User-Agent': UA },
+    });
+    if (!listRes.ok) return null;
+    const all = await listRes.json();
+    const words = String(subject).toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.length) return null;
+
+    let best = null;
+    let bestScore = 0;
+    for (const [id, meta] of Object.entries(all)) {
+      const haystack = (id + ' ' + (meta.name || '') + ' ' + (meta.categories || []).join(' ') + ' ' + (meta.tags || []).join(' ')).toLowerCase();
+      let score = 0;
+      for (const w of words) {
+        if (haystack.includes(w)) score += w.length;
+      }
+      if (score > bestScore) { bestScore = score; best = id; }
+    }
+    if (best && bestScore >= 4) return best;
+    return null;
+  } catch (e) {
+    console.warn('[download3d] findPolyHavenMatch failed:', e.message);
+    return null;
+  }
+}
