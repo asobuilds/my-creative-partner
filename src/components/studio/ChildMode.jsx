@@ -32,6 +32,7 @@ export default function ChildMode() {
   const [showHistory, setShowHistory] = useState(false);
   const [busy, setBusy] = useState(false);
   const [lastTitle, setLastTitle] = useState('');
+  const [mode, setMode] = useState('story');
   const [generatingStory, setGeneratingStory] = useState(false);
   const [storyUrl, setStoryUrl] = useState(null);
   const [showVideoModal, setShowVideoModal] = useState(false);
@@ -202,6 +203,30 @@ export default function ChildMode() {
           Saved!
         </div>
       )}
+
+      {/* MODE_PICKER_MARKER */}
+      <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', bottom: 118, zIndex: 15, display: 'flex', gap: 8, padding: 6, borderRadius: 18, background: 'rgba(10,8,18,0.92)', backdropFilter: 'blur(14px)', border: '1px solid ' + warm + '33' }}>
+        {[
+          { key: 'story', label: 'Story', emoji: '📖' },
+          { key: 'folklore', label: 'Folklore', emoji: '📜' },
+          { key: 'funfact', label: 'Fun Facts', emoji: '🧠' },
+          { key: 'own', label: 'Make Your Own', emoji: '🎨' },
+        ].map((m) => (
+          <button key={m.key} onClick={() => setMode(m.key)} title={m.label}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 14px', borderRadius: 12,
+              background: mode === m.key ? 'linear-gradient(135deg, ' + warm + ', ' + mood.accent + ')' : 'transparent',
+              border: 'none',
+              color: mode === m.key ? '#000' : '#94a3b8',
+              fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              transition: 'all .15s',
+            }}>
+            <span style={{ fontSize: 14 }}>{m.emoji}</span>
+            <span style={{ display: typeof window !== 'undefined' && window.innerWidth < 640 ? 'none' : 'inline' }}>{m.label}</span>
+          </button>
+        ))}
+      </div>
 
       {/* Bottom prompt bar */}
       <form

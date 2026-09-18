@@ -20,6 +20,7 @@ export function useStoryPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: clean,
+          mode: profile.mode || 'story',
           childName: profile.childName || null,
           childAge: profile.childAge || null,
           culture: profile.culture || 'mixed',
