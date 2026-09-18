@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import { searchAll, mediaReady } from '../adapters/media.js';
-import { higgsfieldReady, generateImage } from '../adapters/higgsfield.js';
 import { aiImageUrl } from '../adapters/freeImage.js';
 import { shouldTry, markFailed } from '../adapters/creditGuard.js';
 import { enrichQuery } from '../adapters/africanEnhancer.js';
@@ -21,7 +20,6 @@ export default function mountReference(app) {
     res.json({
       pexels: mediaReady.pexels,
       pixabay: mediaReady.pixabay,
-      higgsfield: higgsfieldReady,
       pollinations: true,
     });
   });
@@ -55,23 +53,7 @@ export default function mountReference(app) {
 
     const result = { query, prompt: raw, source: null, url: null, thumb: null, credit: null, ai: false };
 
-    // 1. Higgsfield (best, needs credits)
-    if ((mode === 'ai' || mode === 'auto') && higgsfieldReady && shouldTry('higgsfield')) {
-      try {
-        const url = await generateImage(
-          'a realistic photograph of a ' + enriched + ', natural lighting, high detail, single subject, no text',
-          { timeoutMs: 45000, aspectRatio: '1:1' }
-        );
-        if (url) {
-          result.url = url; result.thumb = url; result.source = 'higgsfield'; result.ai = true;
-          return res.json(result);
-        }
-      } catch (e) {
-        console.warn('[reference] higgsfield failed:', e.message);
-        if (/40[23]|credit/i.test(e.message)) markFailed('higgsfield', e.message.slice(0, 60));
-      }
-    }
-
+    // 1. Pollinations free AI (no credit limits)
     // 2. Pollinations free AI
     try {
       const url = aiImageUrl(enriched + ', realistic photograph, natural lighting, high detail, no text', { width: 768, height: 768 });

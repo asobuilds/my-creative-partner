@@ -1,142 +1,62 @@
 import 'dotenv/config';
 import express from 'express';
-import os from 'node:os';
-import path from 'node:path';
 import http from 'http';
 import cors from 'cors';
-import { WebSocketServer } from 'ws';
-import { NodePipelineRouter } from './router/NodePipelineRouter.js';
+import os from 'node:os';
+import path from 'node:path';
 import { llmReady, providerStatus } from './adapters/llm.js';
-import { ttsReady } from './adapters/tts.js';
-import { mediaReady } from './adapters/media.js';
-import { videoReady } from './adapters/video.js';
-import { blenderReady } from './adapters/blender.js';
-import { higgsfieldReady } from './adapters/higgsfield.js';
-import { tripoReady } from './adapters/tripo.js';
-import { agnesReady } from './adapters/agnes.js';
-import mountTts from './routes/tts.js';
-import mountImage from './routes/image.js';
-import mountStory from './routes/story.js';
-import mountReference from './routes/reference.js';
-import mountAnimate from './routes/animate.js';
-import mountAssets from './routes/assets.js';
 import mountStoryPage from './routes/storyPage.js';
-import mountSpeak from './routes/speak.js';
 import mountImageSearch from './routes/imageSearch.js';
+import mountReference from './routes/reference.js';
+import mountSpeak from './routes/speak.js';
+import mountStory from './routes/story.js';
+import mountAnimate from './routes/animate.js';
 
 const PORT = Number(process.env.PORT) || 5000;
 const ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 
 const app = express();
 app.use(cors({ origin: ORIGIN, credentials: true }));
-app.use(express.json({ limit: '2mb' }));
-app.use('/renders', express.static(process.env.BLENDER_OUTPUT_PATH || '/tmp/synthetix-renders'));
-app.use('/refined', express.static(path.join(os.tmpdir(), 'synthetix-refine')));
-app.use('/models', express.static(path.join(os.tmpdir(), 'synthetix-models')));
+app.use(express.json({ limit: '4mb' }));
+
+// Static caches
 app.use('/images', express.static(path.join(os.tmpdir(), 'synthetix-images')));
+app.use('/models', express.static(path.join(os.tmpdir(), 'synthetix-models')));
+app.use('/renders', express.static(path.join(os.tmpdir(), 'synthetix-renders')));
 
+app.get('/health', (_req, res) => res.json({
+  ok: true,
+  llm: llmReady,
+  providers: providerStatus,
+  uptime: process.uptime(),
+}));
+
+// Debug LLM
 app.get('/api/debug/llm', async (req, res) => {
-    const t0 = Date.now();
-    try {
-      const { streamChat, providerStatus } = await import('./adapters/llm.js');
-      const messages = [{ role: 'user', content: 'Reply with exactly: {"ok":true,"msg":"hello"}' }];
-      let raw = '';
-      for await (const delta of streamChat(messages, { maxTokens: 100, temperature: 0.3 })) {
-        raw += delta;
-        if (raw.length > 2000) break;
-      }
-      res.json({
-        ok: true,
-        providers: providerStatus,
-        ms: Date.now() - t0,
-        rawLen: raw.length,
-        rawSample: raw.slice(0, 400),
-      });
-    } catch (e) {
-      res.json({ ok: false, ms: Date.now() - t0, error: String(e.message || e), stack: String(e.stack || '').slice(0, 500) });
+  const t0 = Date.now();
+  try {
+    const { streamChat } = await import('./adapters/llm.js');
+    let raw = '';
+    for await (const d of streamChat([{ role: 'user', content: 'Reply with exactly: {"ok":true,"msg":"hello"}' }], { maxTokens: 100, temperature: 0.3 })) {
+      raw += d;
+      if (raw.length > 2000) break;
     }
-  });
-
-  app.get('/health', (_req, res) =>
-  res.json({
-    ok: true,
-    llm: llmReady,
-    providers: providerStatus,
-    tts: ttsReady,
-    media: mediaReady,
-    video: videoReady,
-    blender: blenderReady,
-    higgsfield: higgsfieldReady,
-    tripo: tripoReady,
-    agnes: agnesReady,
-    uptime: process.uptime(),
-  })
-);
-
-const routers = new Map();
-
-app.post('/api/command', (req, res) => {
-  const body = req.body || {};
-  const connId = body.connId;
-  let r = connId ? routers.get(connId) : null;
-  if (!r) r = routers.values().next().value;
-  if (!r) return res.status(400).json({ error: 'No active connection' });
-  if (body.type === 'graph:run') r.handleRun(body);
-  if (body.type === 'graph:cancel') r.cancel();
-  res.json({ ok: true });
+    res.json({ ok: true, ms: Date.now() - t0, rawLen: raw.length, rawSample: raw.slice(0, 400) });
+  } catch (e) {
+    res.json({ ok: false, ms: Date.now() - t0, error: String(e.message || e) });
+  }
 });
 
-mountTts(app);
-mountImage(app);
-mountStory(app);
-mountReference(app);
-mountAnimate(app);
-mountAssets(app);
 mountStoryPage(app);
-mountSpeak(app);
 mountImageSearch(app);
+mountReference(app);
+mountSpeak(app);
+mountStory(app);
+mountAnimate(app);
+
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server, path: '/api/stream' });
-
-wss.on('connection', (ws) => {
-  const connId = 'c-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-  const router = new NodePipelineRouter((frame) => {
-    if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(frame));
-  });
-  routers.set(connId, router);
-
-  ws.send(JSON.stringify({ type: 'hello', connId }));
-
-  ws.on('message', (raw) => {
-    let msg;
-    try { msg = JSON.parse(raw.toString()); } catch (e) { return; }
-    if (msg.type === 'ping') return ws.send(JSON.stringify({ type: 'pong' }));
-    if (msg.type === 'graph:run') return router.handleRun(msg);
-    if (msg.type === 'graph:cancel') return router.cancel();
-  });
-
-  ws.on('close', () => { router.cancel(); routers.delete(connId); });
-  ws.on('error', () => { router.cancel(); routers.delete(connId); });
-});
-
-app.get('/api/stream', (req, res) => {
-  res.set({
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache, no-transform',
-    Connection: 'keep-alive',
-  });
-  if (res.flushHeaders) res.flushHeaders();
-  const router = new NodePipelineRouter((f) => res.write('data: ' + JSON.stringify(f) + '\n\n'));
-  const connId = 'sse-' + Date.now();
-  routers.set(connId, router);
-  const ka = setInterval(() => res.write(': ping\n\n'), 20000);
-  req.on('close', () => { clearInterval(ka); router.cancel(); routers.delete(connId); });
-});
-
 server.listen(PORT, () => {
-  console.log('Synthetix orchestrator on :' + PORT
+  console.log('9jaWonderPal on :' + PORT
     + '  [llm=' + llmReady
-    + ' providers=' + JSON.stringify(providerStatus)
-    + ' tts=' + ttsReady
-    + ' video=' + videoReady + ' blender=' + blenderReady + ' hf=' + higgsfieldReady + ']');
+    + ' providers=' + JSON.stringify(providerStatus) + ']');
 });

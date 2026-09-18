@@ -77,47 +77,55 @@ export default function mountStoryPage(app) {
       + '\nCulture: ' + getCulture(cultureKey).name
       + seedHint;
 
-    let page = null;
-    try {
-      page = await completeJSON(
-        [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMsg }],
-        { maxTokens: 2500, temperature: 0.7 }
-      );
-    } catch (e) {
-      console.warn('[story/page] LLM attempt 1 failed:', e.message);
-    }
-
-    if (!page || !page.story) {
-      try {
-        const retry = await completeJSON(
-          [
-            { role: 'system', content: 'Return STRICT JSON only. {"title":string,"story":string (5 sentences),"imagePrompt":string,"names":{"native":string,"english":string},"fact":string,"history":string,"proverb":{"text":string,"meaning":string,"lang":string},"question":string,"sticker":string}. No markdown.' },
-            { role: 'user', content: 'Write a 5-sentence storybook page for a ' + getCulture(cultureKey).name + ' child about: ' + prompt },
-          ],
-          { maxTokens: 1800, temperature: 0.7 }
-        );
-        if (retry && retry.story) page = retry;
-      } catch (e) {
-        console.warn('[story/page] LLM retry failed:', e.message);
-      }
-    }
-
-    if (!page || !page.story) {
-      return res.status(503).json({ error: 'story_unavailable', message: 'The storyteller is resting. Try again in a moment.' });
-    }
-
-    const imagePrompt = (page.imagePrompt || prompt)
-      + ', ' + getCulture(cultureKey).name + ' Nigerian setting, illustrated storybook, warm colours, no text, no watermark';
-    const remoteImage = aiImageUrl(imagePrompt, { width: 1024, height: 1024 });
-
-    let image = remoteImage;
-    try {
-      image = await ensureCached(remoteImage, { timeoutMs: 40000, subject: prompt });
-    } catch (e) {
-      console.warn('[story/page] image failed:', e.message);
-    }
-
     const c = getCulture(cultureKey);
+
+    // Parallel: kick off image fetch immediately using the raw prompt,
+    // and the LLM call in parallel. Image takes ~3s, LLM ~5s.
+    const imagePrompt = prompt + ', illustrated storybook style, ' + c.name + ' Nigerian setting, warm colours, no text, no watermark';
+    const remoteImage = aiImageUrl(imagePrompt, { width: 1024, height: 1024 });
+    const imagePromise = ensureCached(remoteImage, { timeoutMs: 40000, subject: prompt })
+      .catch(() => remoteImage);
+
+    const pagePromise = (async () => {
+      if (!llmReady) return null;
+      const seedHint = subject ? '\n\nREFERENCE SUBJECT DATA: ' + JSON.stringify(subject) : '';
+      const userMsg = 'Child prompt: "' + prompt + '"'
+        + (childName ? '\nHero name: ' + childName : '')
+        + (childAge ? '\nChild age: ' + childAge : '')
+        + (interests && interests.length ? '\nChild interests: ' + interests.join(', ') : '')
+        + '\nCulture: ' + c.name
+        + seedHint;
+
+      let page = null;
+      try {
+        page = await completeJSON(
+          [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMsg }],
+          { maxTokens: 2500, temperature: 0.7 }
+        );
+      } catch (e) {
+        console.warn('[story/page] LLM attempt 1 failed:', e.message);
+      }
+      if (!page || !page.story) {
+        try {
+          const retry = await completeJSON(
+            [
+              { role: 'system', content: 'Return STRICT JSON only. {"title":string,"story":string (5 sentences),"imagePrompt":string,"names":{"native":string,"english":string},"fact":string,"history":string,"proverb":{"text":string,"meaning":string,"lang":string},"question":string,"sticker":string}. No markdown.' },
+              { role: 'user', content: 'Write a 5-sentence storybook page for a ' + c.name + ' child about: ' + prompt },
+            ],
+            { maxTokens: 1800, temperature: 0.7 }
+          );
+          if (retry && retry.story) page = retry;
+        } catch (e) {
+          console.warn('[story/page] LLM retry failed:', e.message);
+        }
+      }
+      return page;
+    })();
+
+    const [image, page] = await Promise.all([imagePromise, pagePromise]);
+
+
+    
     const narrationParts = [
       page.title ? page.title + '.' : '',
       page.story || '',
