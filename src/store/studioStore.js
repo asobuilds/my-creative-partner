@@ -84,7 +84,7 @@ export const useStudioStore = create((set, get) => ({
   addPage: (page) => set((s) => ({ pages: [...s.pages, page] })),
   saveCurrentBook: () => {
     const state = get();
-    if (!state.pages.length) return null;
+    if (!state.pages.length) { console.warn('[save] no pages'); return null; }
     const first = state.pages[0];
     const book = {
       id: 'book-' + Date.now(),
@@ -102,7 +102,7 @@ export const useStudioStore = create((set, get) => ({
   loadBook: (id) => {
     const book = get().worlds.find((w) => w.id === id);
     if (!book) return null;
-    set({ pages: book.pages || [] });
+    set({ pages: book.pages || [], lastRender: book.preview ? { preview: book.preview } : null });
     return book;
   },
   attachVideoToBook: (bookId, videoUrl) => {

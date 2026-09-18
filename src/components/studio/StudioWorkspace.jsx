@@ -6,6 +6,7 @@ import HUD from './HUD';
 import CompanionOverlay from './CompanionOverlay';
 import RenderPreview from './RenderPreview';
 import ImageSearchPanel from './ImageSearchPanel';
+import BookView from './BookView';
 import { useResponsive } from '../../hooks/useResponsive';
 import { usePromptEngine } from '../../hooks/usePromptEngine';
 import { startMoodSync } from '../../engine/moodEngine';
@@ -31,7 +32,7 @@ function DesktopLayout({ engine, cancel, streamStatus, showSearch, setShowSearch
         <NodePalette />
       </aside>
       <main style={{ position: 'relative' }}>
-        <SpatialViewport className="viewport" />
+        <BookView />
         <HUD engine={engine} cancel={cancel} streamStatus={streamStatus} />
         <CompanionOverlay />
         <RenderPreview />

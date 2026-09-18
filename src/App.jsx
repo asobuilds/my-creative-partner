@@ -26,6 +26,16 @@ export default function App() {
   const onboardingDone = useStudioStore((s) => s.onboardingDone);
 
   const showOnboarding = !onboardingDone && activeTab === 'canvas';
+  const [showTour, setShowTour] = useState(false);
+  useEffect(() => {
+    try {
+      const seen = localStorage.getItem('9jawonderpal.tour-seen') === '1';
+      if (!seen) {
+        setShowTour(true);
+        localStorage.setItem('9jawonderpal.tour-seen', '1');
+      }
+    } catch (e) {}
+  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: isMobile ? 'column-reverse' : 'row', height: '100vh', width: '100vw', background: '#090d16', color: '#fff', overflow: 'hidden', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
