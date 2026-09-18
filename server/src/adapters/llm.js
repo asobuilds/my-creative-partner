@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { extraProviders, streamCerebras, streamGemini, completeHuggingFace } from './llmProviders.js';
 
 const {
   LLM_PROVIDER = 'openrouter',
@@ -17,11 +18,14 @@ const {
 const isReal = (v) => Boolean(v) && String(v).trim().length > 4 && !/^(PASTE|YOUR_|REPLACE)/i.test(String(v));
 
 export const providerStatus = {
+  cerebras: extraProviders.cerebras,
   openrouter: isReal(OPENROUTER_API_KEY),
   groq: isReal(GROQ_API_KEY),
+  gemini: extraProviders.gemini,
+  huggingface: extraProviders.huggingface,
 };
 
-export const llmReady = providerStatus.openrouter || providerStatus.groq;
+export const llmReady = Object.values(providerStatus).some(Boolean);
 
 // ── Request queue
 const queue = { chain: Promise.resolve(), last: 0 };
@@ -39,12 +43,12 @@ function enqueue(fn) {
 }
 
 // ── Provider cooldown
-const cooldown = { openrouter: 0, groq: 0 };
+const cooldown = { openrouter: 0, groq: 0, cerebras: 0, gemini: 0, huggingface: 0 };
 const COOLDOWN_MS = 20000;
 
 function pickOrder(preferred) {
   const now = Date.now();
-  const order = [preferred || LLM_PROVIDER, LLM_FALLBACK, 'openrouter', 'groq'];
+  const order = [preferred || LLM_PROVIDER, LLM_FALLBACK, 'cerebras', 'groq', 'openrouter', 'gemini', 'huggingface'];
   const seen = new Set();
   const result = [];
   for (const p of order) {
@@ -134,6 +138,19 @@ async function* streamFromProvider(provider, messages, opts) {
       temperature: Number(opts.temperature || GROQ_TEMPERATURE),
       messages, signal: opts.signal,
     });
+    return;
+  }
+  if (provider === 'cerebras') {
+    yield* streamCerebras({ messages, maxTokens: Number(opts.maxTokens || OPENROUTER_MAX_TOKENS), temperature: Number(opts.temperature || OPENROUTER_TEMPERATURE), signal: opts.signal });
+    return;
+  }
+  if (provider === 'gemini') {
+    yield* streamGemini({ messages, maxTokens: Number(opts.maxTokens || OPENROUTER_MAX_TOKENS), temperature: Number(opts.temperature || OPENROUTER_TEMPERATURE), signal: opts.signal });
+    return;
+  }
+  if (provider === 'huggingface') {
+    const text = await completeHuggingFace({ messages, maxTokens: Number(opts.maxTokens || 1500), temperature: Number(opts.temperature || OPENROUTER_TEMPERATURE), signal: opts.signal });
+    if (text) yield text;
     return;
   }
   throw new Error('Unknown provider: ' + provider);
