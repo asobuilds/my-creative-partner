@@ -1,39 +1,72 @@
 import 'dotenv/config';
 
 const {
-  LLM_PROVIDER = 'groq',
-  LLM_FALLBACK = 'openrouter',
+  LLM_PROVIDER = 'openrouter',
+  LLM_FALLBACK = 'groq',
+
+  OPENROUTER_API_KEY, OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1',
+  OPENROUTER_MODEL = 'meta-llama/llama-3.1-8b-instruct',
+  OPENROUTER_APP_NAME = '9jaWonderPal', OPENROUTER_APP_URL = 'http://localhost:5173',
+  OPENROUTER_MAX_TOKENS = '3000', OPENROUTER_TEMPERATURE = '0.85',
 
   GROQ_API_KEY, GROQ_BASE_URL = 'https://api.groq.com/openai/v1',
   GROQ_MODEL = 'llama-3.3-70b-versatile',
-  GROQ_MAX_TOKENS = '512', GROQ_TEMPERATURE = '0.75',
-
-  OPENROUTER_API_KEY, OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1',
-  OPENROUTER_MODEL = 'anthropic/claude-3.5-sonnet',
-  OPENROUTER_APP_NAME = 'Synthetix', OPENROUTER_APP_URL = 'http://localhost:5173',
-  OPENROUTER_MAX_TOKENS = '512', OPENROUTER_TEMPERATURE = '0.75',
-
-  GEMINI_API_KEY, GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta',
-  GEMINI_MODEL = 'gemini-2.0-flash-exp',
+  GROQ_MAX_TOKENS = '3000', GROQ_TEMPERATURE = '0.85',
 } = process.env;
 
-const isReal = (v) => Boolean(v) && !String(v).startsWith('PASTE_');
+const isReal = (v) => Boolean(v) && String(v).trim().length > 4 && !/^(PASTE|YOUR_|REPLACE)/i.test(String(v));
 
 export const providerStatus = {
-  groq: isReal(GROQ_API_KEY),
   openrouter: isReal(OPENROUTER_API_KEY),
-  gemini: isReal(GEMINI_API_KEY),
+  groq: isReal(GROQ_API_KEY),
 };
 
-export const llmReady = providerStatus.groq || providerStatus.openrouter || providerStatus.gemini;
+export const llmReady = providerStatus.openrouter || providerStatus.groq;
 
-function pickOrder(preferred) {
-  const order = [preferred || LLM_PROVIDER, LLM_FALLBACK, 'groq', 'openrouter', 'gemini'];
-  const seen = new Set();
-  return order.filter((p) => p && providerStatus[p] && !seen.has(p) && seen.add(p));
+// ── Request queue
+const queue = { chain: Promise.resolve(), last: 0 };
+const MIN_GAP_MS = 1000;
+
+function enqueue(fn) {
+  const run = queue.chain.then(async () => {
+    const wait = Math.max(0, MIN_GAP_MS - (Date.now() - queue.last));
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    queue.last = Date.now();
+    return fn();
+  });
+  queue.chain = run.catch(() => {});
+  return run;
 }
 
-async function* streamOpenAICompatible({ baseUrl, apiKey, model, maxTokens, temperature, messages, extraHeaders = {}, signal, json }) {
+// ── Provider cooldown
+const cooldown = { openrouter: 0, groq: 0 };
+const COOLDOWN_MS = 20000;
+
+function pickOrder(preferred) {
+  const now = Date.now();
+  const order = [preferred || LLM_PROVIDER, LLM_FALLBACK, 'openrouter', 'groq'];
+  const seen = new Set();
+  const result = [];
+  for (const p of order) {
+    if (!p || seen.has(p)) continue;
+    seen.add(p);
+    if (!providerStatus[p]) continue;
+    if (cooldown[p] > now) continue;
+    result.push(p);
+  }
+  if (result.length === 0) {
+    for (const p of seen) if (providerStatus[p]) result.push(p);
+  }
+  return result;
+}
+
+function markCooldown(provider) {
+  cooldown[provider] = Date.now() + COOLDOWN_MS;
+  console.warn('[llm] ' + provider + ' cooldown ' + (COOLDOWN_MS / 1000) + 's');
+}
+
+// ── Streaming call
+async function* streamOpenAICompatible({ baseUrl, apiKey, model, maxTokens, temperature, messages, extraHeaders = {}, signal }) {
   const ctl = new AbortController();
   const onAbort = () => ctl.abort();
   if (signal) signal.addEventListener('abort', onAbort);
@@ -43,16 +76,15 @@ async function* streamOpenAICompatible({ baseUrl, apiKey, model, maxTokens, temp
     const res = await fetch(baseUrl.replace(/\/$/, '') + '/chat/completions', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json', ...extraHeaders },
-      body: JSON.stringify({
-        model, messages, stream: true, max_tokens: maxTokens, temperature,
-        ...(json ? { response_format: { type: 'json_object' } } : {}),
-      }),
+      body: JSON.stringify({ model, messages, stream: true, max_tokens: maxTokens, temperature }),
       signal: ctl.signal,
     });
 
     if (!res.ok || !res.body) {
       const text = await res.text().catch(() => '');
-      throw new Error('HTTP ' + res.status + ': ' + text.slice(0, 200));
+      const err = new Error('HTTP ' + res.status + ': ' + text.slice(0, 200));
+      err.status = res.status;
+      throw err;
     }
 
     const reader = res.body.getReader();
@@ -82,90 +114,25 @@ async function* streamOpenAICompatible({ baseUrl, apiKey, model, maxTokens, temp
   }
 }
 
-async function* streamGemini({ apiKey, baseUrl, model, messages, maxTokens, temperature, signal }) {
-  const systemParts = messages.filter((m) => m.role === 'system').map((m) => ({ text: m.content }));
-  const contents = messages.filter((m) => m.role !== 'system').map((m) => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }],
-  }));
-
-  const ctl = new AbortController();
-  const onAbort = () => ctl.abort();
-  if (signal) signal.addEventListener('abort', onAbort);
-  const timeout = setTimeout(() => ctl.abort(), 45000);
-
-  try {
-    const url = baseUrl.replace(/\/$/, '') + '/models/' + model + ':streamGenerateContent?alt=sse&key=' + apiKey;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        ...(systemParts.length ? { systemInstruction: { parts: systemParts } } : {}),
-        generationConfig: { maxOutputTokens: maxTokens, temperature },
-      }),
-      signal: ctl.signal,
-    });
-
-    if (!res.ok || !res.body) {
-      const text = await res.text().catch(() => '');
-      throw new Error('HTTP ' + res.status + ': ' + text.slice(0, 200));
-    }
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buf = '';
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream: true });
-      let idx;
-      while ((idx = buf.indexOf('\n')) !== -1) {
-        const line = buf.slice(0, idx).trim();
-        buf = buf.slice(idx + 1);
-        if (!line.startsWith('data:')) continue;
-        const payload = line.slice(5).trim();
-        if (!payload) continue;
-        try {
-          const j = JSON.parse(payload);
-          const parts = j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts;
-          if (parts && parts.length && parts[0].text) yield parts[0].text;
-        } catch (e) {}
-      }
-    }
-  } finally {
-    clearTimeout(timeout);
-    if (signal) signal.removeEventListener('abort', onAbort);
-  }
-}
-
 async function* streamFromProvider(provider, messages, opts) {
-  if (provider === 'groq') {
-    yield* streamOpenAICompatible({
-      baseUrl: GROQ_BASE_URL, apiKey: GROQ_API_KEY, model: opts.model || GROQ_MODEL,
-      maxTokens: Number(opts.maxTokens || GROQ_MAX_TOKENS),
-      temperature: Number(opts.temperature || GROQ_TEMPERATURE),
-      messages, signal: opts.signal, json: opts.json,
-    });
-    return;
-  }
   if (provider === 'openrouter') {
     yield* streamOpenAICompatible({
-      baseUrl: OPENROUTER_BASE_URL, apiKey: OPENROUTER_API_KEY, model: opts.model || OPENROUTER_MODEL,
+      baseUrl: OPENROUTER_BASE_URL, apiKey: OPENROUTER_API_KEY,
+      model: opts.model || OPENROUTER_MODEL,
       maxTokens: Number(opts.maxTokens || OPENROUTER_MAX_TOKENS),
       temperature: Number(opts.temperature || OPENROUTER_TEMPERATURE),
-      messages, signal: opts.signal, json: opts.json,
+      messages, signal: opts.signal,
       extraHeaders: { 'HTTP-Referer': OPENROUTER_APP_URL, 'X-Title': OPENROUTER_APP_NAME },
     });
     return;
   }
-  if (provider === 'gemini') {
-    yield* streamGemini({
-      apiKey: GEMINI_API_KEY, baseUrl: GEMINI_BASE_URL, model: opts.model || GEMINI_MODEL,
-      messages,
-      maxTokens: Number(opts.maxTokens || 512),
-      temperature: Number(opts.temperature || 0.75),
-      signal: opts.signal,
+  if (provider === 'groq') {
+    yield* streamOpenAICompatible({
+      baseUrl: GROQ_BASE_URL, apiKey: GROQ_API_KEY,
+      model: opts.model || GROQ_MODEL,
+      maxTokens: Number(opts.maxTokens || GROQ_MAX_TOKENS),
+      temperature: Number(opts.temperature || GROQ_TEMPERATURE),
+      messages, signal: opts.signal,
     });
     return;
   }
@@ -179,16 +146,13 @@ export async function* streamChat(messages, opts = {}) {
   let lastErr = null;
   for (const provider of order) {
     try {
-      let yielded = false;
-      for await (const delta of streamFromProvider(provider, messages, opts)) {
-        yielded = true;
-        yield delta;
-      }
+      for await (const delta of streamFromProvider(provider, messages, opts)) yield delta;
       return;
     } catch (e) {
       lastErr = e;
-      const msg = String(e && e.message || e);
-      console.warn('[llm] provider ' + provider + ' failed: ' + msg.slice(0, 120));
+      const status = e.status || 0;
+      console.warn('[llm] ' + provider + ' failed:', String(e.message).slice(0, 100));
+      if (status === 429) markCooldown(provider);
       if (opts.signal && opts.signal.aborted) throw e;
       continue;
     }
@@ -196,19 +160,92 @@ export async function* streamChat(messages, opts = {}) {
   throw lastErr || new Error('All LLM providers failed');
 }
 
+// ── Robust JSON extraction — handles truncation and markdown
+function repairAndParse(raw) {
+  if (!raw) return null;
+  let s = raw.trim();
+
+  // Strip markdown code fences
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fence) s = fence[1].trim();
+
+  // Find first { and last }
+  const first = s.indexOf('{');
+  if (first < 0) return null;
+  let body = s.slice(first);
+
+  // If truncated, cut to last complete key-value or close braces
+  try { return JSON.parse(body); } catch (e) {}
+
+  // Attempt repair: cut to last comma and close all open braces/brackets
+  const lastComplete = Math.max(body.lastIndexOf(','), body.lastIndexOf('"'));
+  if (lastComplete > 0) {
+    let attempt = body.slice(0, lastComplete + 1);
+    // Count unclosed
+    const open = { '{': 0, '[': 0 };
+    let inStr = false;
+    let esc = false;
+    for (let i = 0; i < attempt.length; i++) {
+      const ch = attempt[i];
+      if (esc) { esc = false; continue; }
+      if (ch === '\\') { esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (ch === '{') open['{']++;
+      else if (ch === '}') open['{']--;
+      else if (ch === '[') open['[']++;
+      else if (ch === ']') open['[']--;
+    }
+    // Remove trailing comma
+    attempt = attempt.replace(/,\s*$/, '');
+    // Close structures
+    while (open['[']-- > 0) attempt += ']';
+    while (open['{']-- > 0) attempt += '}';
+    try { return JSON.parse(attempt); } catch (e) {}
+  }
+
+  return null;
+}
+
 export async function completeJSON(messages, opts = {}) {
-  const _t0 = Date.now();
-  let raw = '';
-  try {
-    for await (const delta of streamChat(messages, { ...opts, json: true })) raw += delta;
-  } catch (e) {
-    console.error('[llm] completeJSON stream threw after ' + (Date.now() - _t0) + 'ms:', e.message);
-    throw e;
+  const attempts = opts.attempts || 2;
+  let lastErr = null;
+
+  for (let i = 0; i < attempts; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, 1200 * i));
+    try {
+      const raw = await enqueue(async () => {
+        let acc = '';
+        for await (const delta of streamChat(messages, opts)) acc += delta;
+        return acc;
+      });
+
+      if (!raw || raw.trim().length < 10) {
+        console.warn('[llm] attempt ' + (i + 1) + ' empty');
+        lastErr = new Error('Empty response');
+        continue;
+      }
+
+      console.log('[llm] attempt ' + (i + 1) + ' raw len=' + raw.length);
+      const parsed = repairAndParse(raw);
+      if (parsed) return parsed;
+
+      console.warn('[llm] attempt ' + (i + 1) + ' parse failed. First 150: ' + raw.slice(0, 150));
+      console.warn('[llm] attempt ' + (i + 1) + ' last 150: ' + raw.slice(-150));
+      lastErr = new Error('Unparseable JSON');
+      continue;
+    } catch (e) {
+      lastErr = e;
+      console.warn('[llm] attempt ' + (i + 1) + ' threw:', String(e.message).slice(0, 100));
+    }
   }
-  console.log('[llm] completeJSON raw len=' + raw.length + ' in ' + (Date.now() - _t0) + 'ms, first 120 chars: ' + raw.slice(0, 120));
-  const cleaned = raw.trim().replace(/^```json\s*/i, '').replace(/```$/, '').trim();
-  try { return JSON.parse(cleaned); } catch (e) {
-    console.error('[llm] JSON parse failed. Tail:', cleaned.slice(-200));
-    return null;
-  }
+  throw lastErr || new Error('completeJSON failed');
+}
+
+export async function completeText(messages, opts = {}) {
+  return await enqueue(async () => {
+    let acc = '';
+    for await (const delta of streamChat(messages, opts)) acc += delta;
+    return acc.trim();
+  });
 }

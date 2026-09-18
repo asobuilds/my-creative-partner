@@ -35,7 +35,29 @@ app.use('/refined', express.static(path.join(os.tmpdir(), 'synthetix-refine')));
 app.use('/models', express.static(path.join(os.tmpdir(), 'synthetix-models')));
 app.use('/images', express.static(path.join(os.tmpdir(), 'synthetix-images')));
 
-app.get('/health', (_req, res) =>
+app.get('/api/debug/llm', async (req, res) => {
+    const t0 = Date.now();
+    try {
+      const { streamChat, providerStatus } = await import('./adapters/llm.js');
+      const messages = [{ role: 'user', content: 'Reply with exactly: {"ok":true,"msg":"hello"}' }];
+      let raw = '';
+      for await (const delta of streamChat(messages, { maxTokens: 100, temperature: 0.3 })) {
+        raw += delta;
+        if (raw.length > 2000) break;
+      }
+      res.json({
+        ok: true,
+        providers: providerStatus,
+        ms: Date.now() - t0,
+        rawLen: raw.length,
+        rawSample: raw.slice(0, 400),
+      });
+    } catch (e) {
+      res.json({ ok: false, ms: Date.now() - t0, error: String(e.message || e), stack: String(e.stack || '').slice(0, 500) });
+    }
+  });
+
+  app.get('/health', (_req, res) =>
   res.json({
     ok: true,
     llm: llmReady,

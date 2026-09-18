@@ -8,6 +8,9 @@ import { InspirationView, LeaderboardView, FeedbackView, FAQView, ProfileView } 
 import { AuthModal, SettingsModal } from './components/Modals';
 import { useResponsive } from './hooks/useResponsive';
 import { useStudioStore } from './store/studioStore';
+import { useAccountStore } from './store/accountStore';
+import OnboardingFlow from './components/onboarding/OnboardingFlow';
+import ParentDashboard from './components/ParentDashboard';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('landing');
@@ -17,6 +20,8 @@ export default function App() {
   const [promptInput, setPromptInput] = useState('');
   const { isMobile } = useResponsive();
   const mode = useStudioStore((s) => s.mode);
+  const onboarded = useAccountStore((s) => s.onboarded);
+  const [showParentDash, setShowParentDash] = useState(false);
   const setMode = useStudioStore((s) => s.setMode);
   const onboardingDone = useStudioStore((s) => s.onboardingDone);
 
@@ -53,6 +58,8 @@ export default function App() {
         {activeTab === 'faq' && <FAQView />}
         {activeTab === 'profile' && <ProfileView currentUser={currentUser} setCurrentUser={setCurrentUser} />}
       </div>
+      {!onboarded && <OnboardingFlow />}
+      {showParentDash && <ParentDashboard onClose={() => setShowParentDash(false)} />}
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onAuthSuccess={setCurrentUser} />
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       {showOnboarding && <Onboarding />}

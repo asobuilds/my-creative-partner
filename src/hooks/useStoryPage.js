@@ -9,7 +9,7 @@ export function useStoryPage() {
   const addPage = useStudioStore((s) => s.addPage);
   const addSticker = useStudioStore((s) => s.addSticker);
 
-  const createPage = async (prompt, childName) => {
+  const createPage = async (prompt, profile = {}) => {
     const clean = String(prompt || '').trim();
     if (!clean) return null;
     setLoading(true);
@@ -18,9 +18,18 @@ export function useStoryPage() {
       const res = await fetch(API + '/api/story/page', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: clean, childName: childName || null }),
+        body: JSON.stringify({
+          prompt: clean,
+          childName: profile.childName || null,
+          childAge: profile.childAge || null,
+          culture: profile.culture || 'mixed',
+          interests: profile.interests || [],
+        }),
       });
-      if (!res.ok) throw new Error('Page generation failed: ' + res.status);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Page generation failed: ' + res.status);
+      }
       const page = await res.json();
       if (page && page.ok) {
         addPage(page);

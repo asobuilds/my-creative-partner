@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BookView from './BookView';
 import { useStudioStore } from '../../store/studioStore';
+import { useAccountStore } from '../../store/accountStore';
 import { useVoicePrompt } from '../../hooks/useVoicePrompt';
 import { useStoryPage } from '../../hooks/useStoryPage';
 import { startMoodSync } from '../../engine/moodEngine';
@@ -37,6 +38,8 @@ export default function ChildMode() {
   const [lastBookId, setLastBookId] = useState(null);
   const inputRef = useRef(null);
 
+  const getActiveChild = useAccountStore((s) => s.getActiveChild);
+  const activeChild = getActiveChild();
   const { createPage } = useStoryPage();
 
   useEffect(() => { startMoodSync(); }, []);
@@ -53,7 +56,12 @@ export default function ChildMode() {
     setLastTitle(clean);
     if (inputRef.current) inputRef.current.value = '';
     try {
-      await createPage(clean);
+      await createPage(clean, {
+        childName: activeChild?.name,
+        childAge: activeChild?.age,
+        culture: activeChild?.culture,
+        interests: activeChild?.interests,
+      });
     } finally {
       setBusy(false);
     }
