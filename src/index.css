@@ -1,3 +1,27 @@
+:root {
+  --theme-bg: #0a0812;
+  --theme-surface: rgba(15,12,26,0.7);
+  --theme-primary: #ffb700;
+  --theme-accent: #a78bfa;
+  --theme-text: #ffffff;
+  --theme-textMuted: #94a3b8;
+  --theme-page: #fafaf7;
+  --theme-pageText: #0a1f44;
+  --theme-pageMuted: #64748b;
+  --motion-duration: 0.25s;
+}
+
+* { transition-duration: var(--motion-duration); }
+
+body {
+  background: var(--theme-bg);
+  color: var(--theme-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --motion-duration: 0s; }
+}
+
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 * {

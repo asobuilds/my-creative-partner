@@ -12,6 +12,7 @@ export default function ParentDashboard({ onClose }) {
   const deleteChild = useAccountStore((s) => s.deleteChild);
   const signOut = useAccountStore((s) => s.signOut);
   const [showAdd, setShowAdd] = useState(false);
+  const [showControls, setShowControls] = useState(null);
 
   return (
     <div style={{
@@ -69,6 +70,7 @@ export default function ParentDashboard({ onClose }) {
                   Active
                 </div>
               )}
+              <button onClick={() => setShowControls(c.id)} style={{ padding: '8px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.06)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.12)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Controls</button>
               <button onClick={() => { if (confirm('Remove ' + c.name + '?')) deleteChild(c.id); }}
                 style={{ padding: '8px 12px', borderRadius: 10, background: 'transparent', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', fontSize: 12, cursor: 'pointer' }}>
                 Remove
@@ -78,11 +80,108 @@ export default function ParentDashboard({ onClose }) {
         ))}
 
         {showAdd && <AddChildModal onClose={() => setShowAdd(false)} />}
+        {showControls && (() => { const c = children.find((x) => x.id === showControls); return c ? <CredentialsPanel child={c} onClose={() => setShowControls(null)} /> : null; })()}
 
         <button onClick={onClose} style={{ marginTop: 24, width: '100%', padding: '14px', borderRadius: 14, background: 'rgba(255,255,255,0.06)',
           border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
           Close
         </button>
+      </div>
+    </div>
+  );
+}
+
+function CredentialsPanel({ child, onClose }) {
+  const toggleSubject = useAccountStore((s) => s.toggleSubject);
+  const toggleMode = useAccountStore((s) => s.toggleMode);
+  const regenerateCredentials = useAccountStore((s) => s.regenerateCredentials);
+  const [revealed, setRevealed] = React.useState(false);
+  const [creds, setCreds] = React.useState({ login: child.login, pin: child.pin });
+  const subjects = [
+    { key: 'english', name: 'English Studies', emoji: '📖' },
+    { key: 'maths', name: 'Mathematics', emoji: '��' },
+    { key: 'nigerian_language', name: 'Nigerian Language', emoji: '🗣️' },
+    { key: 'basic_science', name: 'Basic Science', emoji: '🔬' },
+    { key: 'phe', name: 'Physical & Health', emoji: '🏃' },
+    { key: 'crs', name: 'Christian Religious Studies', emoji: '✝️' },
+    { key: 'is', name: 'Islamic Studies', emoji: '☪️' },
+    { key: 'history', name: 'Nigerian History', emoji: '🏛️' },
+    { key: 'social', name: 'Social & Citizenship', emoji: '🌍' },
+    { key: 'cca', name: 'Cultural & Creative Arts', emoji: '🎨' },
+    { key: 'tech', name: 'Basic Sci & Tech', emoji: '⚙️' },
+    { key: 'digital', name: 'Digital Literacy', emoji: '💻' },
+    { key: 'prevoc', name: 'Pre-Vocational', emoji: '🛠️' },
+  ];
+  const modes = [
+    { key: 'story', name: 'Story', emoji: '📖' },
+    { key: 'folklore', name: 'Folklore', emoji: '📜' },
+    { key: 'funfact', name: 'Fun Facts', emoji: '🧠' },
+    { key: 'own', name: 'Make Your Own', emoji: '��' },
+    { key: 'homework', name: 'Homework Helper', emoji: '✏️' },
+  ];
+  const enabledSubjects = new Set(child.enabledSubjects || []);
+  const allowedModes = new Set(child.allowedModes || []);
+  const regen = () => {
+    if (!confirm('Generate a new username and PIN for ' + child.name + '? The old ones will stop working.')) return;
+    const next = regenerateCredentials(child.id);
+    if (next) setCreds(next);
+  };
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 270, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)', overflowY: 'auto', padding: 20 }}>
+      <div style={{ maxWidth: 620, margin: '0 auto', background: '#0f0c1a', border: '1px solid ' + warm + '55', borderRadius: 22, padding: 26 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div>
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0 }}>{child.avatar} {child.name}'s controls</h3>
+            <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{child.age} years · {child.culture}</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 13 }}>Close</button>
+        </div>
+
+        {/* Credentials */}
+        <div style={{ padding: 18, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 16, marginBottom: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: warm, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10 }}>Login credentials</div>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div><div style={{ fontSize: 11, color: '#94a3b8' }}>Username</div><div style={{ fontSize: 17, fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}>{revealed ? creds.login : '••••••'}</div></div>
+            <div><div style={{ fontSize: 11, color: '#94a3b8' }}>PIN</div><div style={{ fontSize: 17, fontWeight: 800, color: '#fff', fontFamily: 'monospace', letterSpacing: 3 }}>{revealed ? creds.pin : '••••'}</div></div>
+            <button onClick={() => setRevealed(!revealed)} style={{ padding: '8px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#e2e8f0', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{revealed ? 'Hide' : 'Show'}</button>
+            <button onClick={regen} style={{ padding: '8px 14px', borderRadius: 10, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#ef4444', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>New credentials</button>
+          </div>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 10, lineHeight: 1.5 }}>Share these with your child. They sign in on their own screen with just these two things. No email needed.</div>
+        </div>
+
+        {/* Subjects */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: warm, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10 }}>School subjects allowed</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {subjects.map((s) => (
+              <button key={s.key} onClick={() => toggleSubject(child.id, s.key)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 10, fontSize: 12, cursor: 'pointer',
+                  background: enabledSubjects.has(s.key) ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.03)',
+                  border: '1px solid ' + (enabledSubjects.has(s.key) ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.08)'),
+                  color: enabledSubjects.has(s.key) ? '#86efac' : '#64748b', fontWeight: 600 }}>
+                <span>{s.emoji}</span> {s.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Modes */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: warm, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10 }}>Creation modes allowed</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {modes.map((m) => (
+              <button key={m.key} onClick={() => toggleMode(child.id, m.key)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 10, fontSize: 12, cursor: 'pointer',
+                  background: allowedModes.has(m.key) ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.03)',
+                  border: '1px solid ' + (allowedModes.has(m.key) ? 'rgba(167,139,250,0.5)' : 'rgba(255,255,255,0.08)'),
+                  color: allowedModes.has(m.key) ? '#c4b5fd' : '#64748b', fontWeight: 600 }}>
+                <span>{m.emoji}</span> {m.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button onClick={onClose} style={{ width: '100%', padding: 14, borderRadius: 12, background: warm, color: '#000', border: 'none', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Done</button>
       </div>
     </div>
   );

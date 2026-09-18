@@ -2,6 +2,26 @@ import { create } from 'zustand';
 import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
 
 const MAX_EVENTS = 60;
+
+function loadPagesFromStorage() {
+  try {
+    const raw = localStorage.getItem('9jawonderpal.pages.v1');
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+function savePagesToStorage(pages, stickers) {
+  try {
+    localStorage.setItem('9jawonderpal.pages.v1', JSON.stringify(pages.slice(-30)));
+    localStorage.setItem('9jawonderpal.stickers.v1', JSON.stringify(stickers.slice(-100)));
+  } catch (e) {}
+}
+function loadStickersFromStorage() {
+  try {
+    const raw = localStorage.getItem('9jawonderpal.stickers.v1');
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+
 const WORLD_STORAGE_KEY = 'wonderpal.worlds';
 
 function loadWorlds() {
@@ -77,11 +97,11 @@ export const useStudioStore = create((set, get) => ({
   companionDismiss: () => set((s) => ({ companion: { ...s.companion, visible: false } })),
 
   /* Voice */
-  pages: [],
-  stickers: [],
-  addSticker: (emoji) => set((s) => ({ stickers: [...s.stickers, { emoji, ts: Date.now() }] })),
+  pages: loadPagesFromStorage(),
+  stickers: loadStickersFromStorage(),
+  addSticker: (emoji) => set((s) => { const next = [...s.stickers, { emoji, ts: Date.now() }]; savePagesToStorage(s.pages, next); return { stickers: next }; }),
   clearStickers: () => set({ stickers: [] }),
-  addPage: (page) => set((s) => ({ pages: [...s.pages, page] })),
+  addPage: (page) => set((s) => { const next = [...s.pages, page]; savePagesToStorage(next, s.stickers); return { pages: next }; }),
   saveCurrentBook: () => {
     const state = get();
     if (!state.pages.length) { console.warn('[save] no pages'); return null; }
@@ -112,7 +132,7 @@ export const useStudioStore = create((set, get) => ({
   },
   updatePage: (id, patch) => set((s) => ({ pages: s.pages.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
   deletePage: (id) => set((s) => ({ pages: s.pages.filter((p) => p.id !== id) })),
-  clearPages: () => set({ pages: [] }),
+  clearPages: () => { savePagesToStorage([], []); set({ pages: [], stickers: [] }); },
   voiceMuted: false,
   toggleVoiceMuted: () => set((s) => ({ voiceMuted: !s.voiceMuted })),
 

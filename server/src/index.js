@@ -6,6 +6,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { llmReady, providerStatus } from './adapters/llm.js';
 import mountStoryPage from './routes/storyPage.js';
+import mountHomework from './routes/homework.js';
+import mountLocation from './routes/location.js';
 import mountImageSearch from './routes/imageSearch.js';
 import mountReference from './routes/reference.js';
 import mountSpeak from './routes/speak.js';
@@ -48,6 +50,8 @@ app.get('/api/debug/llm', async (req, res) => {
 });
 
 mountStoryPage(app);
+mountHomework(app);
+mountLocation(app);
 mountImageSearch(app);
 mountReference(app);
 mountSpeak(app);

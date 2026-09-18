@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BookView from './BookView';
+import HomeworkHelper from './HomeworkHelper';
+import ChildLogin from '../ChildLogin';
 import { useStudioStore } from '../../store/studioStore';
 import { useAccountStore } from '../../store/accountStore';
 import { useVoicePrompt } from '../../hooks/useVoicePrompt';
@@ -33,6 +35,9 @@ export default function ChildMode() {
   const [busy, setBusy] = useState(false);
   const [lastTitle, setLastTitle] = useState('');
   const [mode, setMode] = useState('story');
+  const [showHomework, setShowHomework] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const allowedModes = useAccountStore((s) => s.getActiveChild()?.allowedModes);
   const [generatingStory, setGeneratingStory] = useState(false);
   const [storyUrl, setStoryUrl] = useState(null);
   const [showVideoModal, setShowVideoModal] = useState(false);
@@ -126,7 +131,7 @@ export default function ChildMode() {
   const warm = mood.primary;
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', background: '#0a0812', overflow: 'hidden' }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--theme-bg)', overflow: 'hidden' }}>
       <BookView />
 
       {/* Top status chip */}
@@ -211,8 +216,9 @@ export default function ChildMode() {
           { key: 'folklore', label: 'Folklore', emoji: '📜' },
           { key: 'funfact', label: 'Fun Facts', emoji: '🧠' },
           { key: 'own', label: 'Make Your Own', emoji: '🎨' },
-        ].map((m) => (
-          <button key={m.key} onClick={() => setMode(m.key)} title={m.label}
+          { key: 'homework', label: 'Homework', emoji: '✏️' },
+        ].filter((m) => !allowedModes || allowedModes.length === 0 || allowedModes.includes(m.key)).map((m) => (
+          <button key={m.key} onClick={() => { if (m.key === 'homework') { setShowHomework(true); } else { setMode(m.key); } }} title={m.label}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '8px 14px', borderRadius: 12,

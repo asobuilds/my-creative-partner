@@ -163,7 +163,7 @@ export default function BookView() {
   useEffect(() => () => stopAll(), []);
 
   return (
-    <div ref={scrollRef} style={{ position: 'absolute', inset: 0, overflowY: 'auto', background: 'radial-gradient(circle at 50% 15%, ' + mood.primary + '12 0%, #0a0812 55%)', paddingTop: 90, paddingBottom: 130, paddingLeft: 16, paddingRight: 16 }}>
+    <div ref={scrollRef} style={{ position: 'absolute', inset: 0, overflowY: 'auto', background: 'var(--theme-bg)', paddingTop: 90, paddingBottom: 130, paddingLeft: 16, paddingRight: 16 }}>
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
         {pages.length === 0 && (
           <div style={{ padding: 60, textAlign: 'center', color: '#64748b' }}>

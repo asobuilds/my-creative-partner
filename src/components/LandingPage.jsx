@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Sparkles, ArrowRight, Mic, BookOpen, Heart, Palette, Share2, Shield, Users, Gamepad2, Volume2, X } from 'lucide-react';
+import { Sparkles, ArrowRight, Mic, BookOpen, Heart, Palette, Share2, Shield, Users, Gamepad2, Volume2, X, ChevronDown, Star, MapPin, Trophy, Award, Send } from 'lucide-react';
+import { useLocation } from '../hooks/useLocation';
 
 const NAVY = '#0a1f44';
 const NAVY_LIGHT = '#1e3a8a';
@@ -45,6 +46,10 @@ function TourStep({ n, icon, title, body, active }) {
 }
 
 export default function LandingPage({ onLaunch, onOpenAuth }) {
+  const { location } = useLocation();
+  const [faqOpen, setFaqOpen] = useState(null);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackSent, setFeedbackSent] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [tourStep, setTourStep] = useState(0);
 
@@ -188,6 +193,189 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
               </FadeIn>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── POINTS PREVIEW ──────────────────────── */}
+      <section style={{ padding: '80px 24px', background: CREAM }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <FadeIn>
+            <div style={{ textAlign: 'center', marginBottom: 56 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: GOLD, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Every page earns something</div>
+              <h2 style={{ fontSize: 'clamp(1.6rem, 3.2vw, 2.4rem)', fontWeight: 800, color: NAVY, margin: 0, letterSpacing: -0.6, lineHeight: 1.15 }}>
+                Learning that feels like winning
+              </h2>
+            </div>
+          </FadeIn>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+            {[
+              { icon: <Star size={26} />, big: '+10', title: 'Points per page', body: 'Every page earns wonder points. Streak bonuses at 3, 7, 30 days.' },
+              { icon: <Trophy size={26} />, big: '12', title: 'Cultural badges', body: 'Unlock badges for finishing projects, learning proverbs, and trying new modes.' },
+              { icon: <Award size={26} />, big: 'Top 10', title: 'Family leaderboard', body: 'Parents and siblings see progress. Friendly competition, no pressure.' },
+            ].map((c, i) => (
+              <FadeIn key={i} delay={i * 100}>
+                <div style={{ padding: 28, background: '#fff', borderRadius: 20, border: '1px solid rgba(10,31,68,0.08)', textAlign: 'center', height: '100%' }}>
+                  <div style={{ display: 'inline-flex', padding: 14, borderRadius: 18, background: 'rgba(245,158,11,0.15)', color: GOLD, marginBottom: 16 }}>
+                    {c.icon}
+                  </div>
+                  <div style={{ fontSize: 40, fontWeight: 800, color: NAVY, lineHeight: 1, letterSpacing: -2, marginBottom: 10 }}>{c.big}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: NAVY, marginBottom: 8 }}>{c.title}</div>
+                  <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6, margin: 0 }}>{c.body}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── LOCATION + CULTURE ──────────────────── */}
+      <section style={{ padding: '80px 24px', background: '#fff' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <FadeIn>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 40 }}>
+              <div style={{ display: 'inline-flex', padding: 14, borderRadius: 18, background: 'rgba(245,158,11,0.15)', color: GOLD, marginBottom: 20 }}>
+                <MapPin size={26} />
+              </div>
+              <h2 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 800, color: NAVY, margin: '0 0 12px', letterSpacing: -0.6, lineHeight: 1.15 }}>
+                Grounded where your child stands
+              </h2>
+              <p style={{ fontSize: 15, color: '#64748b', maxWidth: 560, lineHeight: 1.7, margin: 0 }}>
+                Every child learns the culture of their family <em>and</em> the culture of where they live. A Yoruba child in Kano grows up bilingual in <em>both</em> worlds.
+              </p>
+            </div>
+          </FadeIn>
+
+          {location && location.ok && (
+            <FadeIn delay={100}>
+              <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '20px 32px', borderRadius: 20, background: 'linear-gradient(135deg, rgba(10,31,68,0.05), rgba(245,158,11,0.08))', border: '1px solid rgba(10,31,68,0.08)', margin: '0 auto', display: 'flex', width: 'fit-content' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: GOLD, letterSpacing: 2, textTransform: 'uppercase' }}>You are here</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: NAVY }}>{location.region || location.city || 'Nigeria'}</div>
+                {location.cultureName && (
+                  <div style={{ fontSize: 13, color: '#64748b', fontStyle: 'italic' }}>{location.cultureName} country — {location.message}</div>
+                )}
+              </div>
+            </FadeIn>
+          )}
+        </div>
+      </section>
+
+      {/* ── REVIEWS ──────────────────────────────── */}
+      <section style={{ padding: '80px 24px', background: CREAM }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <FadeIn>
+            <div style={{ textAlign: 'center', marginBottom: 56 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: GOLD, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>From parents</div>
+              <h2 style={{ fontSize: 'clamp(1.6rem, 3.2vw, 2.4rem)', fontWeight: 800, color: NAVY, margin: 0, letterSpacing: -0.6, lineHeight: 1.15 }}>
+                What Nigerian families are saying
+              </h2>
+            </div>
+          </FadeIn>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+            {[
+              { name: 'Folake A.', city: 'Lagos', text: 'My daughter asks for Yoruba proverbs now. She never did before. It is like the app woke something up in her.', stars: 5 },
+              { name: 'Chidi O.', city: 'Enugu', text: 'We live in Lagos but I am Igbo. 9jaWonderPal gives her the best of both — my tradition and her street culture.', stars: 5 },
+              { name: 'Hauwa M.', city: 'Kano', text: 'The homework helper has become our evening ritual. She brings her maths, it explains step by step. No more tears.', stars: 5 },
+              { name: 'Ochanya E.', city: 'Otukpo', text: 'The Idoma mode. Nobody else does this. My children finally hear their own language in a learning app.', stars: 5 },
+            ].map((t, i) => (
+              <FadeIn key={i} delay={i * 80}>
+                <div style={{ padding: 24, background: '#fff', borderRadius: 20, border: '1px solid rgba(10,31,68,0.06)', height: '100%' }}>
+                  <div style={{ display: 'flex', gap: 3, marginBottom: 14, color: GOLD }}>
+                    {[0,1,2,3,4].map((n) => <Star key={n} size={13} fill={n < t.stars ? GOLD : 'none'} color={GOLD} />)}
+                  </div>
+                  <p style={{ fontSize: 14, color: '#334155', lineHeight: 1.7, marginBottom: 18, fontStyle: 'italic' }}>&ldquo;{t.text}&rdquo;</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(10,31,68,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: NAVY, fontSize: 13 }}>{t.name[0]}</div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: NAVY }}>{t.name}</div>
+                      <div style={{ fontSize: 11, color: '#94a3b8' }}>{t.city}</div>
+                    </div>
+                  </div>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ──────────────────────────────────── */}
+      <section style={{ padding: '80px 24px', background: '#fff' }}>
+        <div style={{ maxWidth: 780, margin: '0 auto' }}>
+          <FadeIn>
+            <div style={{ textAlign: 'center', marginBottom: 56 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: GOLD, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Questions from parents</div>
+              <h2 style={{ fontSize: 'clamp(1.6rem, 3.2vw, 2.4rem)', fontWeight: 800, color: NAVY, margin: 0, letterSpacing: -0.6, lineHeight: 1.15 }}>
+                Everything you want to know
+              </h2>
+            </div>
+          </FadeIn>
+
+          {[
+            { q: 'Is 9jaWonderPal safe for my child?', a: 'Yes. No ads, no tracking, no external links. You create your child\'s login yourself. You see every page they make. Only you can approve a share.' },
+            { q: 'What ages is it for?', a: 'Designed for Nigerian children aged 4 to 10. Stories and questions adapt to your child\'s exact age — a 5-year-old gets simpler words than an 8-year-old.' },
+            { q: 'Does it teach in Nigerian languages?', a: 'Yes. Choose your child\'s culture when you register them — Yoruba, Igbo, Hausa, Idoma, Tiv, Efik, Ibibio, Ijaw, Edo, Igala, Nupe, Kanuri, Fulani, or Mixed. Every story uses real proverbs, names, and history from that culture.' },
+            { q: 'Can it help with school homework?', a: 'That\'s the Homework Helper. Your child brings a real school question — typing, speaking, or pasting it. The app explains it step by step, tied to the Nigerian primary curriculum (Maths, English, Basic Science, Nigerian History, and more).' },
+            { q: 'Does it cost anything?', a: 'No. It is completely free. No subscriptions, no in-app purchases, no data collection.' },
+            { q: 'What if my child is not Yoruba, Igbo, or Hausa?', a: 'Every culture is first-class on 9jaWonderPal. Idoma, Tiv, Efik, Ibibio, Ijaw, Edo, Igala, Nupe, Kanuri, and Fulani children all get their own proverbs and histories. We also recognise where your child lives.' },
+            { q: 'Can grandparents see what my child made?', a: 'Yes. Any project can be turned into a short video and shared with family. Every page is saved forever in their book.' },
+          ].map((item, i) => {
+            const open = faqOpen === i;
+            return (
+              <FadeIn key={i} delay={i * 40}>
+                <div style={{ marginBottom: 10, background: CREAM, border: '1px solid rgba(10,31,68,0.06)', borderRadius: 16, overflow: 'hidden' }}>
+                  <button onClick={() => setFaqOpen(open ? null : i)}
+                    style={{ width: '100%', padding: '20px 22px', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', textAlign: 'left', gap: 16 }}>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: NAVY, lineHeight: 1.4 }}>{item.q}</span>
+                    <ChevronDown size={18} color={GOLD} style={{ flexShrink: 0, transition: 'transform .25s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                  </button>
+                  <div style={{ maxHeight: open ? 300 : 0, overflow: 'hidden', transition: 'max-height .3s ease' }}>
+                    <div style={{ padding: '0 22px 20px', fontSize: 14, color: '#475569', lineHeight: 1.7 }}>{item.a}</div>
+                  </div>
+                </div>
+              </FadeIn>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── FEEDBACK ─────────────────────────────── */}
+      <section style={{ padding: '80px 24px', background: CREAM }}>
+        <div style={{ maxWidth: 620, margin: '0 auto', textAlign: 'center' }}>
+          <FadeIn>
+            <div style={{ display: 'inline-flex', padding: 14, borderRadius: 18, background: 'rgba(245,158,11,0.15)', color: GOLD, marginBottom: 20 }}>
+              <Send size={24} />
+            </div>
+            <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', fontWeight: 800, color: NAVY, margin: '0 0 12px', letterSpacing: -0.6 }}>
+              Tell us what your child needs next
+            </h2>
+            <p style={{ fontSize: 15, color: '#64748b', lineHeight: 1.7, marginBottom: 32 }}>
+              We build every feature based on what Nigerian families ask for. Your words shape the next version.
+            </p>
+          </FadeIn>
+
+          {feedbackSent ? (
+            <FadeIn>
+              <div style={{ padding: 24, background: '#fff', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 16 }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>🙏</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: NAVY, marginBottom: 6 }}>Thank you!</div>
+                <div style={{ fontSize: 14, color: '#64748b' }}>Your voice helps us serve Nigeria\'s children better.</div>
+              </div>
+            </FadeIn>
+          ) : (
+            <FadeIn>
+              <div style={{ background: '#fff', border: '1px solid rgba(10,31,68,0.08)', borderRadius: 20, padding: 24 }}>
+                <textarea value={feedbackText} onChange={(e) => setFeedbackText(e.target.value)}
+                  placeholder="A feature you want. A story that worked. A bug you found."
+                  rows={4}
+                  style={{ width: '100%', padding: 14, border: '1px solid rgba(10,31,68,0.12)', borderRadius: 12, fontSize: 14, outline: 'none', fontFamily: 'inherit', resize: 'vertical', color: NAVY, background: '#fafaf7' }} />
+                <button onClick={() => setFeedbackSent(true)} disabled={!feedbackText.trim()}
+                  style={{ marginTop: 14, padding: '14px 32px', borderRadius: 14, background: feedbackText.trim() ? NAVY : '#cbd5e1', color: '#fff', border: 'none', fontSize: 14, fontWeight: 800, cursor: feedbackText.trim() ? 'pointer' : 'not-allowed' }}>
+                  Send feedback
+                </button>
+              </div>
+            </FadeIn>
+          )}
         </div>
       </section>
 

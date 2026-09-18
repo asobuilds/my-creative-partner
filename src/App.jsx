@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import LandingPage from './components/LandingPage';
 import StudioWorkspace from './components/studio/StudioWorkspace';
 import ChildMode from './components/studio/ChildMode';
 import Onboarding from './components/Onboarding';
-import { InspirationView, LeaderboardView, FeedbackView, FAQView, ProfileView } from './components/SecondaryViews';
 import { AuthModal, SettingsModal } from './components/Modals';
 import { useResponsive } from './hooks/useResponsive';
 import { useStudioStore } from './store/studioStore';
+import { useSettingsStore } from './store/settingsStore';
+import SettingsPanel from './components/Settings/SettingsPanel';
+import SparkView from './components/Spark/SparkView';
+import LeaderboardView from './components/Leaderboard/LeaderboardView';
+import FeedbackView from './components/Feedback/FeedbackView';
 import { useAccountStore } from './store/accountStore';
 import OnboardingFlow from './components/onboarding/OnboardingFlow';
 import ParentDashboard from './components/ParentDashboard';
@@ -22,6 +26,15 @@ export default function App() {
   const mode = useStudioStore((s) => s.mode);
   const onboarded = useAccountStore((s) => s.onboarded);
   const [showParentDash, setShowParentDash] = useState(false);
+  const applyAll = useSettingsStore((s) => s.applyAll);
+  useEffect(() => { applyAll(); }, [applyAll]);
+  const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem('9jawonderpal.sidebar') === '1'; } catch (e) { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('9jawonderpal.sidebar', collapsed ? '1' : '0'); } catch (e) {}
+  }, [collapsed]);
   const setMode = useStudioStore((s) => s.setMode);
   const onboardingDone = useStudioStore((s) => s.onboardingDone);
 
@@ -38,13 +51,15 @@ export default function App() {
   }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: isMobile ? 'column-reverse' : 'row', height: '100vh', width: '100vw', background: '#090d16', color: '#fff', overflow: 'hidden', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+    <div style={{ display: 'flex', flexDirection: isMobile ? 'column-reverse' : 'row', height: '100vh', width: '100vw', background: 'var(--theme-bg)', color: '#fff', overflow: 'hidden', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         currentUser={currentUser}
         onOpenAuth={() => setIsAuthOpen(true)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenSettings={() => setIsSettingsPanelOpen(true)}
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed((v) => !v)}
       />
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {activeTab === 'landing' && (
@@ -62,7 +77,7 @@ export default function App() {
             </button>
           </>
         )}
-        {activeTab === 'inspiration' && <InspirationView setPromptInput={setPromptInput} setActiveTab={setActiveTab} />}
+        {activeTab === 'inspiration' && <SparkView onStart={(text) => { setPromptInput(text); setActiveTab('canvas'); }} />}
         {activeTab === 'leaderboard' && <LeaderboardView />}
         {activeTab === 'feedback' && <FeedbackView />}
         {activeTab === 'faq' && <FAQView />}
@@ -71,7 +86,7 @@ export default function App() {
       {!onboarded && <OnboardingFlow />}
       {showParentDash && <ParentDashboard onClose={() => setShowParentDash(false)} />}
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onAuthSuccess={setCurrentUser} />
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      {isSettingsPanelOpen && <SettingsPanel onClose={() => setIsSettingsPanelOpen(false)} onOpenParentDashboard={() => { setIsSettingsPanelOpen(false); setShowParentDash(true); }} />}
       {showOnboarding && <Onboarding />}
     </div>
   );

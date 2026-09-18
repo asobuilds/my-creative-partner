@@ -7,11 +7,11 @@ import 'dotenv/config';
 const {
   CEREBRAS_API_KEY,
   CEREBRAS_BASE_URL = 'https://api.cerebras.ai/v1',
-  CEREBRAS_MODEL = 'llama-3.3-70b',
+  CEREBRAS_MODEL = 'llama3.1-70b',
 
   GEMINI_API_KEY,
   GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta',
-  GEMINI_MODEL = 'gemini-2.0-flash-exp',
+  GEMINI_MODEL = 'gemini-2.0-flash',
 
   HF_TOKEN,
   HF_MODEL = 'meta-llama/Llama-3.1-8B-Instruct',
