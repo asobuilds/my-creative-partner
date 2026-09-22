@@ -3,6 +3,8 @@ import { ArrowLeft, RefreshCw, ChevronRight } from 'lucide-react';
 import { useAccountStore } from '../../store/accountStore';
 import { useGameProgressStore } from '../../store/gameProgressStore';
 import { useGamificationStore } from '../../store/gamificationStore';
+import { tap as sTap, correct as sCorrect, wrong as sWrong, combo as sCombo, badge as sBadge, stageComplete as sStageComplete, pointsEarned as sPoints, startGame as sStartGame, pageTurn as sPageTurn } from '../../engine/sound';
+import WonderBackground from '../Background/WonderBackground';
 
 const ALL_SHAPES = [
   { key: 'circle', label: 'Circle', emoji: '⚫', color: '#ffb700' },
@@ -72,7 +74,7 @@ export default function ShapeSort({ onExit }) {
         if (typeof window !== 'undefined' && g) window.dispatchEvent(new CustomEvent('wonderpal:points-earned', { detail: g }));
       } catch (e) {}
     }
-    if (correct) {
+    if (correct) { try { sCorrect(); } catch (e) {}
       setPool((p) => p.filter((i) => i.id !== dragging.id));
       setSlots((s) => s.map((x) => x.key === slot.key ? { ...x, filled: dragging } : x));
       setScore((v) => v + result.earned);
@@ -84,8 +86,7 @@ export default function ShapeSort({ onExit }) {
       }
     } else {
       setScore((v) => Math.max(0, v - 2));
-      setCombo(0);
-    }
+      setCombo(0); try { sWrong(); } catch (e) {} }
     setDragging(null);
   }
 
@@ -97,7 +98,7 @@ export default function ShapeSort({ onExit }) {
     if (pool.length === 0 && allFilled) {
       completedRef.current = true;
       const t = setTimeout(() => {
-        setStageComplete(true);
+        setStageComplete(true); try { sStageComplete(); } catch (e) {}
         completeStage(activeChild?.id, 'shape-sort', { finalScore: score, stage });
           // STAGE_COMPLETE_HOOKED
           if (activeChild?.id && recordGlobal) {
@@ -113,10 +114,11 @@ export default function ShapeSort({ onExit }) {
 
   if (stageComplete) {
     return (
-      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', background: '#0a0812', padding: 20 }}>
+    <WonderBackground variant="games">
+    <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', background: '#0a0812', padding: 20 }}>
         <div style={{ fontSize: 72, marginBottom: 16 }}>🏆</div>
-        <h2 style={{ fontSize: 26, fontWeight: 800, color: '#fff', margin: '0 0 8px' }}>Stage {stage} complete!</h2>
-        <p style={{ fontSize: 16, color: '#94a3b8', marginBottom: 8 }}>You earned</p>
+        <h2 style={{ fontSize: 26, fontWeight: 800, color: '#0a1f44', margin: '0 0 8px' }}>Stage {stage} complete!</h2>
+        <p style={{ fontSize: 16, color: '#475569', marginBottom: 8 }}>You earned</p>
         <div style={{ fontSize: 44, fontWeight: 800, color: '#22d3ee', marginBottom: 24, letterSpacing: -1 }}>{score}</div>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
           {stage < 5 && (
@@ -124,10 +126,10 @@ export default function ShapeSort({ onExit }) {
               Next stage <ChevronRight size={16} />
             </button>
           )}
-          <button onClick={startStage} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 24px', borderRadius: 14, background: 'rgba(255,255,255,0.06)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.12)', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+          <button onClick={startStage} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 24px', borderRadius: 14, background: 'rgba(255,255,255,0.7)', color: '#1e293b', border: '1px solid rgba(255,255,255,0.12)', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
             <RefreshCw size={15} /> Replay
           </button>
-          <button onClick={onExit} style={{ padding: '14px 24px', borderRadius: 14, background: 'transparent', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.12)', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+          <button onClick={onExit} style={{ padding: '14px 24px', borderRadius: 14, background: 'transparent', color: '#475569', border: '1px solid rgba(255,255,255,0.12)', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
             Back
           </button>
         </div>
@@ -139,7 +141,7 @@ export default function ShapeSort({ onExit }) {
     <div style={{ height: '100%', overflowY: 'auto', background: '#0a0812', padding: '20px 16px' }}>
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <button onClick={onExit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          <button onClick={onExit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.12)', color: '#1e293b', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             <ArrowLeft size={14} /> Back
           </button>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -160,8 +162,8 @@ export default function ShapeSort({ onExit }) {
           </div>
         )}
 
-        <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', textAlign: 'center', margin: '0 0 6px' }}>Match the shape to its place</h2>
-        <p style={{ fontSize: 13, color: '#94a3b8', textAlign: 'center', margin: '0 0 24px' }}>Drag each shape to its matching slot.</p>
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0a1f44', textAlign: 'center', margin: '0 0 6px' }}>Match the shape to its place</h2>
+        <p style={{ fontSize: 13, color: '#475569', textAlign: 'center', margin: '0 0 24px' }}>Drag each shape to its matching slot.</p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 12, marginBottom: 24 }}>
           {slots.map((slot) => (
@@ -170,13 +172,13 @@ export default function ShapeSort({ onExit }) {
               onDrop={() => onDropOnSlot(slot)}
               style={{ padding: 16, borderRadius: 18, background: slot.filled ? slot.color + '22' : 'rgba(255,255,255,0.03)', border: '2px dashed ' + (slot.filled ? slot.color : 'rgba(255,255,255,0.15)'), minHeight: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <div style={{ fontSize: 28 }}>{slot.filled ? slot.filled.emoji : '❓'}</div>
-              <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700 }}>{slot.label}</div>
+              <div style={{ fontSize: 11, color: '#475569', fontWeight: 700 }}>{slot.label}</div>
             </div>
           ))}
         </div>
 
-        <div style={{ padding: 18, borderRadius: 18, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10 }}>Drag from here</div>
+        <div style={{ padding: 18, borderRadius: 18, background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#475569', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10 }}>Drag from here</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
             {pool.map((item) => (
               <div key={item.id} draggable onDragStart={() => setDragging(item)}
@@ -188,5 +190,6 @@ export default function ShapeSort({ onExit }) {
         </div>
       </div>
     </div>
+    </WonderBackground>
   );
 }

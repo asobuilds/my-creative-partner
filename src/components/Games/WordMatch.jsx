@@ -4,6 +4,8 @@ import { useAccountStore } from '../../store/accountStore';
 import { useGameProgressStore } from '../../store/gameProgressStore';
 import { useGamificationStore } from '../../store/gamificationStore';
 import { wordsForCulture } from '../../engine/gameContent';
+import { tap as sTap, correct as sCorrect, wrong as sWrong, combo as sCombo, badge as sBadge, stageComplete as sStageComplete, pointsEarned as sPoints, startGame as sStartGame, pageTurn as sPageTurn } from '../../engine/sound';
+import WonderBackground from '../Background/WonderBackground';
 
 function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
 
@@ -93,7 +95,7 @@ export default function WordMatch({ onExit }) {
       if (nextIdx >= queue.length) {
         if (!completedRef.current) {
           completedRef.current = true;
-          setStageComplete(true);
+          setStageComplete(true); try { sStageComplete(); } catch (e) {}
           const finalScore = score + (correct ? result.earned : 0);
           completeStage(activeChild?.id, 'word-match', { finalScore, stage });
           // STAGE_COMPLETE_HOOKED
@@ -112,22 +114,23 @@ export default function WordMatch({ onExit }) {
 
   if (stageComplete) {
     return (
-      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', background: '#0a0812', padding: 20 }}>
+    <WonderBackground variant="games">
+    <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', background: '#0a0812', padding: 20 }}>
         <div style={{ fontSize: 72, marginBottom: 16, animation: 'pop .5s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>🏆</div>
-        <h2 style={{ fontSize: 26, fontWeight: 800, color: '#fff', margin: '0 0 8px' }}>Stage {stage} complete!</h2>
-        <p style={{ fontSize: 16, color: '#94a3b8', marginBottom: 8 }}>You earned</p>
+        <h2 style={{ fontSize: 26, fontWeight: 800, color: '#0a1f44', margin: '0 0 8px' }}>Stage {stage} complete!</h2>
+        <p style={{ fontSize: 16, color: '#475569', marginBottom: 8 }}>You earned</p>
         <div style={{ fontSize: 44, fontWeight: 800, color: '#ffb700', marginBottom: 24, letterSpacing: -1 }}>{score}</div>
-        <div style={{ fontSize: 14, color: '#94a3b8', marginBottom: 32 }}>points</div>
+        <div style={{ fontSize: 14, color: '#475569', marginBottom: 32 }}>points</div>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
           {stage < 5 && (
             <button onClick={() => setStage(stage + 1)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 28px', borderRadius: 14, background: 'linear-gradient(135deg,#ffb700,#ff6b00)', color: '#000', border: 'none', fontSize: 16, fontWeight: 800, cursor: 'pointer' }}>
               Next stage <ChevronRight size={16} />
             </button>
           )}
-          <button onClick={startStage} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 24px', borderRadius: 14, background: 'rgba(255,255,255,0.06)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.12)', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+          <button onClick={startStage} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 24px', borderRadius: 14, background: 'rgba(255,255,255,0.7)', color: '#1e293b', border: '1px solid rgba(255,255,255,0.12)', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
             <RefreshCw size={15} /> Replay
           </button>
-          <button onClick={onExit} style={{ padding: '14px 24px', borderRadius: 14, background: 'transparent', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.12)', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+          <button onClick={onExit} style={{ padding: '14px 24px', borderRadius: 14, background: 'transparent', color: '#475569', border: '1px solid rgba(255,255,255,0.12)', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
             Back
           </button>
         </div>
@@ -142,7 +145,7 @@ export default function WordMatch({ onExit }) {
     <div style={{ height: '100%', overflowY: 'auto', background: '#0a0812', padding: '20px 16px' }}>
       <div style={{ maxWidth: 560, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <button onClick={onExit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          <button onClick={onExit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.12)', color: '#1e293b', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             <ArrowLeft size={14} /> Back
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -171,10 +174,10 @@ export default function WordMatch({ onExit }) {
 
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <div style={{ fontSize: 64, marginBottom: 12 }}>{current.emoji}</div>
-          <div style={{ fontSize: 12, color: '#94a3b8', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>
+          <div style={{ fontSize: 12, color: '#475569', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>
             Which word matches?
           </div>
-          <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', letterSpacing: -0.5 }}>
+          <div style={{ fontSize: 32, fontWeight: 800, color: '#0a1f44', letterSpacing: -0.5 }}>
             {current.meaning}
           </div>
         </div>
@@ -191,7 +194,7 @@ export default function WordMatch({ onExit }) {
                   padding: '18px 22px', borderRadius: 18,
                   background: showCorrect ? 'rgba(34,197,94,0.2)' : showWrong ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.04)',
                   border: '2px solid ' + (showCorrect ? '#22c55e' : showWrong ? '#ef4444' : 'rgba(255,255,255,0.1)'),
-                  color: '#fff', fontSize: 20, fontWeight: 800,
+                  color: '#0a1f44', fontSize: 20, fontWeight: 800,
                   cursor: picked ? 'default' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   transition: 'all .2s',
@@ -219,5 +222,6 @@ export default function WordMatch({ onExit }) {
         @keyframes comboIn { from { opacity: 0; transform: scale(0.8) } to { opacity: 1; transform: scale(1) } }
       `}</style>
     </div>
+    </WonderBackground>
   );
 }

@@ -1,8 +1,9 @@
 export const GAMES = [
   { key: 'word-match', name: 'Word Match', emoji: '🔤', desc: 'Match the picture to the right Nigerian word.', color: '#ffb700', ageMin: 4, ageMax: 12, skill: 'language' },
   { key: 'shape-sort', name: 'Shape Sort', emoji: '🟦', desc: 'Drag each shape to its matching outline.', color: '#22d3ee', ageMin: 4, ageMax: 8, skill: 'maths' },
+  { key: 'memory-match', name: 'Memory Match', emoji: '🃏', desc: 'Find the matching pairs from Nigeria.', color: '#ff5c8a', ageMin: 4, ageMax: 10, skill: 'memory' },
+  { key: 'story-order', name: 'Story Order', emoji: '📖', desc: 'Put the story back in the right order.', color: '#f472b6', ageMin: 6, ageMax: 12, skill: 'reading' },
   { key: 'proverb-match', name: 'Proverb Match', emoji: '📜', desc: 'Match each proverb to its meaning.', color: '#a78bfa', ageMin: 7, ageMax: 12, skill: 'culture' },
-  { key: 'story-order', name: 'Story Order', emoji: '📖', desc: 'Put the story pages back in the right order.', color: '#f472b6', ageMin: 6, ageMax: 12, skill: 'reading' },
 ];
 
 export function gamesForAge(age) {

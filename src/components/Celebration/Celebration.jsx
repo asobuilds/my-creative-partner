@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Sparkles, Flame, Award } from 'lucide-react';
 import { badgeByKey } from '../../engine/badges';
+import { tap as sTap, correct as sCorrect, wrong as sWrong, combo as sCombo, badge as sBadge, stageComplete as sStageComplete, pointsEarned as sPoints, startGame as sStartGame, pageTurn as sPageTurn } from '../../engine/sound';
 
 const CONFETTI_COLORS = ['#ffb700', '#ff6b00', '#22d3ee', '#a78bfa', '#f472b6', '#4ade80'];
 
@@ -28,12 +29,12 @@ export default function Celebration() {
     const onPoints = (e) => {
       const detail = e.detail;
       if (!detail) return;
-      setToast({ points: detail.pointsEarned, streak: detail.streak, total: detail.totalPoints });
+      setToast({ points: detail.pointsEarned, streak: detail.streak, total: detail.totalPoints }); try { sPoints(); } catch (e) {}
       setConfetti(confettiPieces(40));
       setTimeout(() => { setToast(null); setConfetti([]); }, 2600);
       if (detail.newlyEarned && detail.newlyEarned.length) {
         setTimeout(() => {
-          setBadgePopup(badgeByKey(detail.newlyEarned[0]));
+          setBadgePopup(badgeByKey(detail.newlyEarned[0])); try { sBadge(); } catch (e) {}
           setTimeout(() => setBadgePopup(null), 4000);
         }, 800);
       }

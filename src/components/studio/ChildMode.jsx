@@ -9,6 +9,8 @@ import { useVoicePrompt } from '../../hooks/useVoicePrompt';
 import { useStoryPage } from '../../hooks/useStoryPage';
 import { startMoodSync } from '../../engine/moodEngine';
 import { Mic, Sparkles, Save, RotateCcw, Volume2, VolumeX, History, Share2, BookOpen, Award, Play, X } from 'lucide-react';
+import { tap as sTap, correct as sCorrect, wrong as sWrong, combo as sCombo, badge as sBadge, stageComplete as sStageComplete, pointsEarned as sPoints, startGame as sStartGame, pageTurn as sPageTurn } from '../../engine/sound';
+import WonderBackground from '../Background/WonderBackground';
 
 function resolveUrl(u) {
   if (!u) return null;
@@ -238,7 +240,7 @@ export default function ChildMode({ pendingPrompt, onPromptConsumed }) {
           { key: 'own', label: 'Make Your Own', emoji: '🎨' },
           { key: 'homework', label: 'Homework Helper', emoji: '✏️' },
         ].filter((m) => !allowedModes || allowedModes.length === 0 || allowedModes.includes(m.key)).map((m) => (
-          <button key={m.key} onClick={() => { if (m.key === 'homework') { setShowHomework(true); } else { setMode(m.key); } }} title={m.label}
+          <button key={m.key} onClick={() => { try { sTap(); } catch (e) {} if (m.key === 'homework') { setShowHomework(true); } else { setMode(m.key); } }} title={m.label}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '8px 14px', borderRadius: 12,
@@ -256,7 +258,7 @@ export default function ChildMode({ pendingPrompt, onPromptConsumed }) {
 
       {/* Bottom prompt bar */}
       <form
-        onSubmit={(e) => { e.preventDefault(); submit(inputRef.current?.value); }}
+        onSubmit={(e) => { e.preventDefault(); try { sCorrect(); } catch (e) {} submit(inputRef.current?.value); }}
         style={{
           position: 'absolute', left: '50%', transform: 'translateX(-50%)',
           bottom: 34, zIndex: 15,

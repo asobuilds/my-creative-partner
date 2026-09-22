@@ -3,6 +3,7 @@ import { Volume2, VolumeX, Loader2, Play } from 'lucide-react';
 import { useStudioStore } from '../../store/studioStore';
 import { playExclusive, stopAll } from '../../engine/audioQueue';
 import PageInfoPanel from './PageInfoPanel';
+import { tap as sTap, pageTurn as sPageTurn } from '../../engine/sound';
 
 const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5000').replace(/\/$/, '');
 
@@ -23,7 +24,15 @@ function Page({ page, index, mood, isLatest }) {
   const audioRef = useRef(null);
   const autoPlayTimer = useRef(null);
 
-  const openSection = (kind) => { setInfoSection(kind); setInfoOpen(true); };
+  const openSection = (kind) => { try { sTap(); } catch (e) {} setInfoSection(kind); setInfoOpen(true); };
+
+  const stopGameSounds = () => {
+    try {
+      const audioPool = {};
+      // Pause any game effect currently playing
+      document.querySelectorAll('audio').forEach((a) => { try { a.pause(); } catch (e) {} });
+    } catch (e) {}
+  };
 
   const speak = async () => {
     if (speaking) {
@@ -54,7 +63,7 @@ function Page({ page, index, mood, isLatest }) {
   // Auto-play ONLY for the latest page, ONLY once, AFTER a short delay
   useEffect(() => {
     if (!isLatest || hasPlayedOnce) return;
-    autoPlayTimer.current = setTimeout(() => { speak(); }, 900);
+    autoPlayTimer.current = setTimeout(() => { speak(); }, 1400);
     return () => { if (autoPlayTimer.current) clearTimeout(autoPlayTimer.current); };
     // eslint-disable-next-line
   }, [isLatest]);
@@ -160,7 +169,7 @@ export default function BookView() {
 
   useEffect(() => {
     if (pages.length > prevCount.current && scrollRef.current) {
-      setTimeout(() => scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 200);
+      setTimeout(() => { try { sPageTurn(); } catch (e) {} scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }); }, 200);
     }
     prevCount.current = pages.length;
   }, [pages.length]);

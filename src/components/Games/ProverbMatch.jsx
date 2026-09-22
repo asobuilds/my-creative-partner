@@ -4,6 +4,8 @@ import { useAccountStore } from '../../store/accountStore';
 import { useGameProgressStore } from '../../store/gameProgressStore';
 import { useGamificationStore } from '../../store/gamificationStore';
 import { proverbsForCulture } from '../../engine/gameContent';
+import { tap as sTap, correct as sCorrect, wrong as sWrong, combo as sCombo, badge as sBadge, stageComplete as sStageComplete, pointsEarned as sPoints, startGame as sStartGame, pageTurn as sPageTurn } from '../../engine/sound';
+import WonderBackground from '../Background/WonderBackground';
 
 function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
 
@@ -84,7 +86,7 @@ export default function ProverbMatch({ onExit }) {
       if (nextIdx >= queue.length) {
         if (!completedRef.current) {
           completedRef.current = true;
-          setStageComplete(true);
+          setStageComplete(true); try { sStageComplete(); } catch (e) {}
           completeStage(activeChild?.id, 'proverb-match', { finalScore: score + (correct ? result.earned : 0), stage });
           // STAGE_COMPLETE_HOOKED
           if (activeChild?.id && recordGlobal) {
@@ -102,21 +104,22 @@ export default function ProverbMatch({ onExit }) {
 
   if (stageComplete) {
     return (
-      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', background: '#0a0812', padding: 20 }}>
+    <WonderBackground variant="games">
+    <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', background: '#0a0812', padding: 20 }}>
         <div style={{ fontSize: 72, marginBottom: 16 }}>📜</div>
-        <h2 style={{ fontSize: 26, fontWeight: 800, color: '#fff', margin: '0 0 8px' }}>Stage {stage} complete!</h2>
-        <p style={{ fontSize: 16, color: '#94a3b8', marginBottom: 8 }}>You earned</p>
+        <h2 style={{ fontSize: 26, fontWeight: 800, color: '#0a1f44', margin: '0 0 8px' }}>Stage {stage} complete!</h2>
+        <p style={{ fontSize: 16, color: '#475569', marginBottom: 8 }}>You earned</p>
         <div style={{ fontSize: 44, fontWeight: 800, color: '#a78bfa', marginBottom: 24, letterSpacing: -1 }}>{score}</div>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
           {stage < 3 && (
-            <button onClick={() => setStage(stage + 1)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 28px', borderRadius: 14, background: 'linear-gradient(135deg,#a78bfa,#7c3aed)', color: '#fff', border: 'none', fontSize: 16, fontWeight: 800, cursor: 'pointer' }}>
+            <button onClick={() => setStage(stage + 1)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 28px', borderRadius: 14, background: 'linear-gradient(135deg,#a78bfa,#7c3aed)', color: '#0a1f44', border: 'none', fontSize: 16, fontWeight: 800, cursor: 'pointer' }}>
               Next stage <ChevronRight size={16} />
             </button>
           )}
-          <button onClick={startStage} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 24px', borderRadius: 14, background: 'rgba(255,255,255,0.06)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.12)', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+          <button onClick={startStage} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 24px', borderRadius: 14, background: 'rgba(255,255,255,0.7)', color: '#1e293b', border: '1px solid rgba(255,255,255,0.12)', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
             <RefreshCw size={15} /> Replay
           </button>
-          <button onClick={onExit} style={{ padding: '14px 24px', borderRadius: 14, background: 'transparent', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.12)', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+          <button onClick={onExit} style={{ padding: '14px 24px', borderRadius: 14, background: 'transparent', color: '#475569', border: '1px solid rgba(255,255,255,0.12)', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
             Back
           </button>
         </div>
@@ -130,7 +133,7 @@ export default function ProverbMatch({ onExit }) {
     <div style={{ height: '100%', overflowY: 'auto', background: '#0a0812', padding: '20px 16px' }}>
       <div style={{ maxWidth: 560, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <button onClick={onExit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          <button onClick={onExit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.12)', color: '#1e293b', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             <ArrowLeft size={14} /> Back
           </button>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -153,12 +156,12 @@ export default function ProverbMatch({ onExit }) {
           <div style={{ fontSize: 11, fontWeight: 800, color: '#c4b5fd', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 12 }}>
             {activeChild?.culture ? activeChild.culture.toUpperCase() : 'Nigerian'} proverb
           </div>
-          <div style={{ fontSize: 20, fontStyle: 'italic', color: '#fff', lineHeight: 1.5, marginBottom: 8 }}>
+          <div style={{ fontSize: 20, fontStyle: 'italic', color: '#0a1f44', lineHeight: 1.5, marginBottom: 8 }}>
             &ldquo;{current.text}&rdquo;
           </div>
         </div>
 
-        <div style={{ fontSize: 13, color: '#94a3b8', textAlign: 'center', marginBottom: 14 }}>
+        <div style={{ fontSize: 13, color: '#475569', textAlign: 'center', marginBottom: 14 }}>
           What does it mean?
         </div>
 
@@ -170,7 +173,7 @@ export default function ProverbMatch({ onExit }) {
             const showWrong = picked && isPicked && !isCorrect;
             return (
               <button key={opt.meaning} onClick={() => pick(opt)} disabled={!!picked}
-                style={{ padding: '16px 20px', borderRadius: 16, background: showCorrect ? 'rgba(34,197,94,0.2)' : showWrong ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.04)', border: '2px solid ' + (showCorrect ? '#22c55e' : showWrong ? '#ef4444' : 'rgba(255,255,255,0.1)'), color: '#e2e8f0', fontSize: 15, fontWeight: 600, cursor: picked ? 'default' : 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, lineHeight: 1.5 }}>
+                style={{ padding: '16px 20px', borderRadius: 16, background: showCorrect ? 'rgba(34,197,94,0.2)' : showWrong ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.04)', border: '2px solid ' + (showCorrect ? '#22c55e' : showWrong ? '#ef4444' : 'rgba(255,255,255,0.1)'), color: '#1e293b', fontSize: 15, fontWeight: 600, cursor: picked ? 'default' : 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, lineHeight: 1.5 }}>
                 <span>{opt.meaning}</span>
                 {showCorrect && <Check size={20} color="#22c55e" style={{ flexShrink: 0 }} />}
                 {showWrong && <X size={20} color="#ef4444" style={{ flexShrink: 0 }} />}
@@ -183,5 +186,6 @@ export default function ProverbMatch({ onExit }) {
         {feedback === 'wrong' && <div style={{ marginTop: 20, textAlign: 'center', fontSize: 14, color: '#fca5a5' }}>The right answer was: <strong>{current.meaning}</strong></div>}
       </div>
     </div>
+    </WonderBackground>
   );
 }

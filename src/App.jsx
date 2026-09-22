@@ -18,6 +18,8 @@ import GameHub from './components/Games/GameHub';
 import WordMatch from './components/Games/WordMatch';
 import ShapeSort from './components/Games/ShapeSort';
 import ProverbMatch from './components/Games/ProverbMatch';
+import StoryOrder from './components/Games/StoryOrder';
+import MemoryMatch from './components/Games/MemoryMatch';
 import { useAccountStore } from './store/accountStore';
 import OnboardingFlow from './components/onboarding/OnboardingFlow';
 import ParentDashboard from './components/ParentDashboard';
@@ -91,6 +93,8 @@ export default function App() {
         {activeTab === 'games' && activeGame === 'word-match' && <WordMatch onExit={() => setActiveGame(null)} />}
         {activeTab === 'games' && activeGame === 'shape-sort' && <ShapeSort onExit={() => setActiveGame(null)} />}
         {activeTab === 'games' && activeGame === 'proverb-match' && <ProverbMatch onExit={() => setActiveGame(null)} />}
+        {activeTab === 'games' && activeGame === 'story-order' && <StoryOrder onExit={() => setActiveGame(null)} />}
+        {activeTab === 'games' && activeGame === 'memory-match' && <MemoryMatch onExit={() => setActiveGame(null)} />}
         {activeTab === 'inspiration' && <SparkView onStart={(text) => { setPromptInput(text); setPendingPrompt(text); setActiveTab('canvas'); }} />}
         {activeTab === 'leaderboard' && <LeaderboardView />}
         {activeTab === 'feedback' && <FeedbackView />}
