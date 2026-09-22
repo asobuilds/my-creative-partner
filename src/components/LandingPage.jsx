@@ -64,7 +64,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
   return (
     <div style={{ height: '100%', overflowY: 'auto', background: CREAM, fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
       {/* ── HERO ─────────────────────────────────── */}
-      <section style={{ position: 'relative', minHeight: '92vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '60px 24px 40px', textAlign: 'center' }}>
+      <section style={{ position: 'relative', minHeight: '92vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: 'clamp(40px, 8vw, 80px) clamp(16px, 4vw, 40px)', textAlign: 'center' }}>
         <FadeIn>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 30, background: 'rgba(10,31,68,0.06)', border: '1px solid rgba(10,31,68,0.1)', fontSize: 12, color: NAVY, fontWeight: 700, marginBottom: 28, letterSpacing: 0.4 }}>
             <Sparkles size={13} color={GOLD} /> 9jaWonderPal — Nigeria's first voice-first imagination studio
@@ -86,7 +86,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
         </FadeIn>
 
         <FadeIn delay={300}>
-          <div style={{ display: 'flex', gap: 12, marginTop: 40, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 12, marginTop: 40, justifyContent: 'center', flexWrap: 'wrap', padding: '0 8px' }}>
             <button onClick={onLaunch} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 34px', borderRadius: 16, background: NAVY, color: '#fff', border: 'none', fontSize: 15, fontWeight: 800, cursor: 'pointer', letterSpacing: 0.3, boxShadow: '0 8px 24px rgba(10,31,68,0.25)' }}>
               <Mic size={17} /> Start Creating — Free
             </button>
@@ -104,7 +104,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
       </section>
 
       {/* ── WHY ──────────────────────────────────── */}
-      <section style={{ background: '#fff', padding: '80px 24px', borderTop: '1px solid rgba(10,31,68,0.06)' }}>
+      <section style={{ background: '#fff', padding: 'clamp(48px, 8vw, 80px) clamp(16px, 4vw, 40px)', borderTop: '1px solid rgba(10,31,68,0.06)' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
           <FadeIn>
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
@@ -115,7 +115,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
             </div>
           </FadeIn>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 20 }}>
             {[
               { icon: <BookOpen size={22} />, title: 'History was removed', body: 'In 2009, Nigeria dropped History from its primary curriculum. A whole generation lost its stories, proverbs, and traditions.' },
               { icon: <Heart size={22} />, title: 'Passive consumption', body: 'Most kids\' apps play videos at them. Children need to CREATE — to speak, to direct, to wonder.' },
@@ -134,7 +134,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────── */}
-      <section style={{ padding: '80px 24px', background: CREAM }}>
+      <section style={{ padding: 'clamp(48px, 8vw, 80px) clamp(16px, 4vw, 40px)', background: CREAM }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <FadeIn>
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
@@ -145,7 +145,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
             </div>
           </FadeIn>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
             {[
               { n: '01', icon: <Mic size={22} />, title: 'Speak your idea', body: '"A lion who is afraid of the dark." Tap the microphone and say it out loud.' },
               { n: '02', icon: <Sparkles size={22} />, title: 'Pick a shape', body: 'Story, Folklore, Fun Facts, or Make Your Own — one tap and your page begins.' },
@@ -165,7 +165,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
       </section>
 
       {/* ── FEATURES ─────────────────────────────── */}
-      <section style={{ padding: '80px 24px', background: '#fff' }}>
+      <section style={{ padding: 'clamp(48px, 8vw, 80px) clamp(16px, 4vw, 40px)', background: '#fff' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <FadeIn>
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
@@ -176,7 +176,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
             </div>
           </FadeIn>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16 }}>
             {[
               { icon: <BookOpen size={24} />, title: 'Four creation modes', body: 'Story, Folklore, Fun Facts, Make Your Own — each one is its own craft.', span: 3, big: true },
               { icon: <Users size={24} />, title: 'Your real culture', body: 'Register your child\'s heritage. A Yoruba child hears Yoruba proverbs. An Idoma child hears Idoma ones. Never mixed up.', span: 3, big: true },
@@ -197,7 +197,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
       </section>
 
       {/* ── POINTS PREVIEW ──────────────────────── */}
-      <section style={{ padding: '80px 24px', background: CREAM }}>
+      <section style={{ padding: 'clamp(48px, 8vw, 80px) clamp(16px, 4vw, 40px)', background: CREAM }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
           <FadeIn>
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
@@ -208,7 +208,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
             </div>
           </FadeIn>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 16 }}>
             {[
               { icon: <Star size={26} />, big: '+10', title: 'Points per page', body: 'Every page earns wonder points. Streak bonuses at 3, 7, 30 days.' },
               { icon: <Trophy size={26} />, big: '12', title: 'Cultural badges', body: 'Unlock badges for finishing projects, learning proverbs, and trying new modes.' },
@@ -230,7 +230,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
       </section>
 
       {/* ── LOCATION + CULTURE ──────────────────── */}
-      <section style={{ padding: '80px 24px', background: '#fff' }}>
+      <section style={{ padding: 'clamp(48px, 8vw, 80px) clamp(16px, 4vw, 40px)', background: '#fff' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <FadeIn>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 40 }}>
@@ -261,7 +261,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
       </section>
 
       {/* ── REVIEWS ──────────────────────────────── */}
-      <section style={{ padding: '80px 24px', background: CREAM }}>
+      <section style={{ padding: 'clamp(48px, 8vw, 80px) clamp(16px, 4vw, 40px)', background: CREAM }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
           <FadeIn>
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
@@ -272,7 +272,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
             </div>
           </FadeIn>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 20 }}>
             {[
               { name: 'Folake A.', city: 'Lagos', text: 'My daughter asks for Yoruba proverbs now. She never did before. It is like the app woke something up in her.', stars: 5 },
               { name: 'Chidi O.', city: 'Enugu', text: 'We live in Lagos but I am Igbo. 9jaWonderPal gives her the best of both — my tradition and her street culture.', stars: 5 },
@@ -300,7 +300,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
       </section>
 
       {/* ── FAQ ──────────────────────────────────── */}
-      <section style={{ padding: '80px 24px', background: '#fff' }}>
+      <section style={{ padding: 'clamp(48px, 8vw, 80px) clamp(16px, 4vw, 40px)', background: '#fff' }}>
         <div style={{ maxWidth: 780, margin: '0 auto' }}>
           <FadeIn>
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
@@ -340,7 +340,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
       </section>
 
       {/* ── FEEDBACK ─────────────────────────────── */}
-      <section style={{ padding: '80px 24px', background: CREAM }}>
+      <section style={{ padding: 'clamp(48px, 8vw, 80px) clamp(16px, 4vw, 40px)', background: CREAM }}>
         <div style={{ maxWidth: 620, margin: '0 auto', textAlign: 'center' }}>
           <FadeIn>
             <div style={{ display: 'inline-flex', padding: 14, borderRadius: 18, background: 'rgba(245,158,11,0.15)', color: GOLD, marginBottom: 20 }}>
@@ -380,7 +380,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
       </section>
 
       {/* ── MISSION QUOTE ─────────────────────────── */}
-      <section style={{ padding: '100px 24px', background: NAVY, textAlign: 'center' }}>
+      <section style={{ padding: 'clamp(60px, 10vw, 100px) clamp(16px, 4vw, 40px)', background: NAVY, textAlign: 'center' }}>
         <FadeIn>
           <div style={{ maxWidth: 720, margin: '0 auto' }}>
             <p style={{ fontSize: 'clamp(1.2rem, 2.5vw, 1.8rem)', fontWeight: 500, color: '#fff', lineHeight: 1.5, letterSpacing: -0.3, fontStyle: 'italic', marginBottom: 24 }}>
@@ -394,7 +394,7 @@ export default function LandingPage({ onLaunch, onOpenAuth }) {
       </section>
 
       {/* ── FINAL CTA ─────────────────────────────── */}
-      <section style={{ padding: '100px 24px', background: CREAM, textAlign: 'center' }}>
+      <section style={{ padding: 'clamp(60px, 10vw, 100px) clamp(16px, 4vw, 40px)', background: CREAM, textAlign: 'center' }}>
         <FadeIn>
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
             <h2 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.4rem)', fontWeight: 800, color: NAVY, margin: '0 0 16px', letterSpacing: -0.6 }}>

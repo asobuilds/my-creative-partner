@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Volume2, VolumeX, Loader2, Play } from 'lucide-react';
 import { useStudioStore } from '../../store/studioStore';
 import { playExclusive, stopAll } from '../../engine/audioQueue';
+import PageInfoPanel from './PageInfoPanel';
 
 const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5000').replace(/\/$/, '');
 
@@ -14,11 +15,15 @@ function resolveUrl(u) {
 
 function Page({ page, index, mood, isLatest }) {
   const [speaking, setSpeaking] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [infoSection, setInfoSection] = useState(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [hasPlayedOnce, setHasPlayedOnce] = useState(false);
   const audioRef = useRef(null);
   const autoPlayTimer = useRef(null);
+
+  const openSection = (kind) => { setInfoSection(kind); setInfoOpen(true); };
 
   const speak = async () => {
     if (speaking) {
@@ -113,7 +118,7 @@ function Page({ page, index, mood, isLatest }) {
 
         {page.proverb && page.proverb.text && page.proverb.text !== '—' && (
           <div style={{ margin: '16px 0', padding: '14px 16px', background: 'rgba(0,240,255,0.06)', border: '1px dashed ' + mood.primary + '66', borderRadius: 12 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: mood.primary, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 6 }}>{page.proverb.lang} proverb</div>
+            <div onClick={() => openSection('proverb')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 10, fontWeight: 800, color: mood.primary, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 6, cursor: 'pointer' }}><span>{page.proverb.lang} proverb</span><span style={{ textTransform: 'none', letterSpacing: 0, fontSize: 11, padding: '2px 8px', borderRadius: 8, background: mood.primary + '22' }}>Ask ✨</span></div>
             <div style={{ fontSize: 15, fontStyle: 'italic', color: '#e2e8f0', marginBottom: 6, lineHeight: 1.5 }}>&ldquo;{page.proverb.text}&rdquo;</div>
             <div style={{ fontSize: 13, color: '#94a3b8' }}>— {page.proverb.meaning}</div>
           </div>
@@ -121,14 +126,14 @@ function Page({ page, index, mood, isLatest }) {
 
         {page.fact && (
           <div style={{ marginBottom: 12, padding: '12px 14px', background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 12 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#a78bfa', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4 }}>Did you know</div>
+            <div onClick={() => openSection('fact')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 10, fontWeight: 800, color: '#a78bfa', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4, cursor: 'pointer' }}><span>Did you know</span><span style={{ textTransform: 'none', letterSpacing: 0, fontSize: 11, padding: '2px 8px', borderRadius: 8, background: '#a78bfa22' }}>Ask ✨</span></div>
             <div style={{ fontSize: 14, color: '#e2e8f0', lineHeight: 1.5 }}>{page.fact}</div>
           </div>
         )}
 
         {page.history && (
           <div style={{ marginBottom: 12, padding: '12px 14px', background: 'rgba(244,114,182,0.08)', border: '1px solid rgba(244,114,182,0.3)', borderRadius: 12 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#f472b6', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4 }}>From Nigeria</div>
+            <div onClick={() => openSection('history')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 10, fontWeight: 800, color: '#f472b6', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4, cursor: 'pointer' }}><span>From Nigeria</span><span style={{ textTransform: 'none', letterSpacing: 0, fontSize: 11, padding: '2px 8px', borderRadius: 8, background: '#f472b622' }}>Ask ✨</span></div>
             <div style={{ fontSize: 14, color: '#e2e8f0', lineHeight: 1.5 }}>{page.history}</div>
           </div>
         )}
@@ -137,7 +142,7 @@ function Page({ page, index, mood, isLatest }) {
           <div style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
             <span style={{ fontSize: 18 }}>✨</span>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: mood.accent, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>Wonder with me</div>
+              <div onClick={() => openSection('wonder')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 10, fontWeight: 800, color: mood.accent, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4, cursor: 'pointer' }}><span>Wonder with me</span><span style={{ textTransform: 'none', letterSpacing: 0, fontSize: 11, padding: '2px 8px', borderRadius: 8, background: mood.accent + '22' }}>Ask ✨</span></div>
               <div style={{ fontSize: 14, fontStyle: 'italic', color: '#e2e8f0', lineHeight: 1.5 }}>{page.question}</div>
             </div>
           </div>

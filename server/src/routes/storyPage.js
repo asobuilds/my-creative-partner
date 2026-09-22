@@ -30,6 +30,13 @@ A ${c.name} proverb: "${c.proverb.text}" — meaning: "${c.proverb.meaning}"
 
 AGE LEVEL: ${lv.label} — ${lv.description}
 
+GENDER PRONOUNS — CRITICAL:
+- The child's gender is provided in the user message.
+- If gender is "boy", use HE / HIM / HIS throughout. Never use she/her.
+- If gender is "girl", use SHE / HER / HERS throughout. Never use he/him.
+- If gender is "other" or "unspecified", use THEY / THEM / THEIR.
+- The hero is always the child. Match their gender. Do not guess from the name.
+
 `;
 
   const commonFields = `Return STRICT JSON with this EXACT shape:
@@ -105,7 +112,7 @@ Output ONLY the JSON.`;
 
 export default function mountStoryPage(app) {
   app.post('/api/story/page', async (req, res) => {
-    const { prompt, childName, childAge, culture, interests, mode: rawMode } = req.body || {};
+    const { prompt, childName, childAge, childGender, culture, interests, mode: rawMode } = req.body || {};
     if (!prompt || String(prompt).trim().length < 2) {
       return res.status(400).json({ error: 'prompt required' });
     }
@@ -133,6 +140,7 @@ export default function mountStoryPage(app) {
       const userMsg = 'Child prompt: "' + prompt + '"'
         + (childName ? '\nHero name: ' + childName : '')
         + (childAge ? '\nChild age: ' + childAge : '')
+        + (childGender ? '\nChild gender: ' + childGender : '\nChild gender: unspecified')
         + (interests && interests.length ? '\nChild interests: ' + interests.join(', ') : '')
         + '\nCulture: ' + c.name
         + '\nMode: ' + mode.toUpperCase()
@@ -152,7 +160,7 @@ export default function mountStoryPage(app) {
           const retry = await completeJSON(
             [
               { role: 'system', content: 'Return STRICT JSON only. {"title":string,"story":string,"imagePrompt":string,"names":{"native":string,"english":string},"fact":string,"history":string,"proverb":{"text":string,"meaning":string,"lang":string},"question":string,"sticker":string}. No markdown.' },
-              { role: 'user', content: 'Write a ' + mode + ' page for a ' + c.name + ' child about: ' + prompt },
+              { role: 'user', content: 'Write a ' + mode + ' page for a ' + c.name + ' child (gender: ' + (childGender || 'unspecified') + ') about: ' + prompt },
             ],
             { maxTokens: 1800, temperature: 0.75 }
           );

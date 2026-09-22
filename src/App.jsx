@@ -12,6 +12,12 @@ import SettingsPanel from './components/Settings/SettingsPanel';
 import SparkView from './components/Spark/SparkView';
 import LeaderboardView from './components/Leaderboard/LeaderboardView';
 import FeedbackView from './components/Feedback/FeedbackView';
+import Celebration from './components/Celebration/Celebration';
+import KidsLogin from './components/KidsLogin';
+import GameHub from './components/Games/GameHub';
+import WordMatch from './components/Games/WordMatch';
+import ShapeSort from './components/Games/ShapeSort';
+import ProverbMatch from './components/Games/ProverbMatch';
 import { useAccountStore } from './store/accountStore';
 import OnboardingFlow from './components/onboarding/OnboardingFlow';
 import ParentDashboard from './components/ParentDashboard';
@@ -29,6 +35,9 @@ export default function App() {
   const applyAll = useSettingsStore((s) => s.applyAll);
   useEffect(() => { applyAll(); }, [applyAll]);
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
+  const [showKidsLogin, setShowKidsLogin] = useState(false);
+  const [activeGame, setActiveGame] = useState(null);
+  const [pendingPrompt, setPendingPrompt] = useState(null);
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem('9jawonderpal.sidebar') === '1'; } catch (e) { return false; }
   });
@@ -58,6 +67,7 @@ export default function App() {
         currentUser={currentUser}
         onOpenAuth={() => setIsAuthOpen(true)}
         onOpenSettings={() => setIsSettingsPanelOpen(true)}
+        onOpenKidsLogin={() => setShowKidsLogin(true)}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((v) => !v)}
       />
@@ -67,7 +77,7 @@ export default function App() {
         )}
         {activeTab === 'canvas' && (
           <>
-            {mode === 'child' ? <ChildMode /> : <StudioWorkspace />}
+            {mode === 'child' ? <ChildMode pendingPrompt={pendingPrompt} onPromptConsumed={() => setPendingPrompt(null)} /> : <StudioWorkspace />}
             <button
               onClick={() => setMode(mode === 'child' ? 'parent' : 'child')}
               style={{ position: 'absolute', bottom: 14, right: 14, zIndex: 40, padding: '8px 14px', borderRadius: 12, background: 'rgba(15,23,42,0.9)', backdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,0.12)', color: '#94a3b8', fontSize: 11, fontWeight: 600, cursor: 'pointer', letterSpacing: 0.4 }}
@@ -77,7 +87,11 @@ export default function App() {
             </button>
           </>
         )}
-        {activeTab === 'inspiration' && <SparkView onStart={(text) => { setPromptInput(text); setActiveTab('canvas'); }} />}
+        {activeTab === 'games' && !activeGame && <GameHub onLaunchGame={(k) => setActiveGame(k)} />}
+        {activeTab === 'games' && activeGame === 'word-match' && <WordMatch onExit={() => setActiveGame(null)} />}
+        {activeTab === 'games' && activeGame === 'shape-sort' && <ShapeSort onExit={() => setActiveGame(null)} />}
+        {activeTab === 'games' && activeGame === 'proverb-match' && <ProverbMatch onExit={() => setActiveGame(null)} />}
+        {activeTab === 'inspiration' && <SparkView onStart={(text) => { setPromptInput(text); setPendingPrompt(text); setActiveTab('canvas'); }} />}
         {activeTab === 'leaderboard' && <LeaderboardView />}
         {activeTab === 'feedback' && <FeedbackView />}
         {activeTab === 'faq' && <FAQView />}
@@ -85,6 +99,8 @@ export default function App() {
       </div>
       {!onboarded && <OnboardingFlow />}
       {showParentDash && <ParentDashboard onClose={() => setShowParentDash(false)} />}
+      <KidsLogin open={showKidsLogin} onClose={() => setShowKidsLogin(false)} onSuccess={() => { setShowKidsLogin(false); setActiveTab('canvas'); }} />
+      <Celebration />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onAuthSuccess={setCurrentUser} />
       {isSettingsPanelOpen && <SettingsPanel onClose={() => setIsSettingsPanelOpen(false)} onOpenParentDashboard={() => { setIsSettingsPanelOpen(false); setShowParentDash(true); }} />}
       {showOnboarding && <Onboarding />}

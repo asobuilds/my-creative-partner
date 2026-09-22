@@ -8,6 +8,7 @@ import { llmReady, providerStatus } from './adapters/llm.js';
 import mountStoryPage from './routes/storyPage.js';
 import mountHomework from './routes/homework.js';
 import mountLocation from './routes/location.js';
+import mountChat from './routes/chat.js';
 import mountImageSearch from './routes/imageSearch.js';
 import mountReference from './routes/reference.js';
 import mountSpeak from './routes/speak.js';
@@ -52,6 +53,7 @@ app.get('/api/debug/llm', async (req, res) => {
 mountStoryPage(app);
 mountHomework(app);
 mountLocation(app);
+mountChat(app);
 mountImageSearch(app);
 mountReference(app);
 mountSpeak(app);

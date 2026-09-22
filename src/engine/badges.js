@@ -13,7 +13,7 @@ export const BADGES = [
   { key: 'five-hundred',     name: 'Gold Mind',        emoji: '🏆', desc: 'Earned 500 points.',                 threshold: 500, type: 'points' },
 ];
 
-export const POINTS = { story: 10, folklore: 15, funfact: 12, own: 18, homework: 20 };
+export const POINTS = { story: 10, folklore: 15, funfact: 12, own: 18, homework: 20, game: 5 };
 
 export const LEVELS = [
   { min: 0,   name: 'Seedling',      emoji: '🌱' },

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useStudioStore } from '../store/studioStore';
+import { useGamificationStore } from '../store/gamificationStore';
 
 const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5000').replace(/\/$/, '');
 
@@ -8,6 +9,7 @@ export function useStoryPage() {
   const [error, setError] = useState(null);
   const addPage = useStudioStore((s) => s.addPage);
   const addSticker = useStudioStore((s) => s.addSticker);
+  const recordPage = useGamificationStore((s) => s.recordPage);
 
   const createPage = async (prompt, profile = {}) => {
     const clean = String(prompt || '').trim();
@@ -22,6 +24,7 @@ export function useStoryPage() {
           prompt: clean,
           mode: profile.mode || 'story',
           childName: profile.childName || null,
+          childGender: profile.childGender || null,
           childAge: profile.childAge || null,
           culture: profile.culture || 'mixed',
           interests: profile.interests || [],
@@ -35,6 +38,12 @@ export function useStoryPage() {
       if (page && page.ok) {
         addPage(page);
         if (page.sticker) addSticker(page.sticker);
+        if (profile.childId) {
+          const r = recordPage(profile.childId, profile.mode || 'story');
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('wonderpal:points-earned', { detail: r }));
+          }
+        }
         return page;
       }
       return null;

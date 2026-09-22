@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BookView from './BookView';
 import HomeworkHelper from './HomeworkHelper';
+import SessionResume from './SessionResume';
 import ChildLogin from '../ChildLogin';
 import { useStudioStore } from '../../store/studioStore';
 import { useAccountStore } from '../../store/accountStore';
@@ -20,7 +21,7 @@ function resolveUrl(u) {
 
 const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5000').replace(/\/$/, '');
 
-export default function ChildMode() {
+export default function ChildMode({ pendingPrompt, onPromptConsumed }) {
   const mood = useStudioStore((s) => s.mood);
   const muted = useStudioStore((s) => s.voiceMuted);
   const toggleMuted = useStudioStore((s) => s.toggleVoiceMuted);
@@ -35,6 +36,8 @@ export default function ChildMode() {
   const [busy, setBusy] = useState(false);
   const [lastTitle, setLastTitle] = useState('');
   const [mode, setMode] = useState('story');
+  const modeRef = useRef(mode);
+  useEffect(() => { modeRef.current = mode; }, [mode]);
   const [showHomework, setShowHomework] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const allowedModes = useAccountStore((s) => s.getActiveChild()?.allowedModes);
@@ -49,6 +52,20 @@ export default function ChildMode() {
   const { createPage } = useStoryPage();
 
   useEffect(() => { startMoodSync(); }, []);
+
+  // Auto-run a prompt that arrived from Sparks or another tab
+  useEffect(() => {
+    if (!pendingPrompt) return;
+    const clean = String(pendingPrompt).trim();
+    if (!clean) return;
+    if (inputRef && inputRef.current) inputRef.current.value = clean;
+    const t = setTimeout(() => {
+      submit(clean);
+      if (onPromptConsumed) onPromptConsumed();
+    }, 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line
+  }, [pendingPrompt]);
 
   // Auto-open video modal when ready
   useEffect(() => {
@@ -65,6 +82,8 @@ export default function ChildMode() {
       await createPage(clean, {
         childName: activeChild?.name,
         childAge: activeChild?.age,
+        childGender: activeChild?.gender,
+        mode: modeRef.current,
         culture: activeChild?.culture,
         interests: activeChild?.interests,
       });
@@ -209,6 +228,7 @@ export default function ChildMode() {
         </div>
       )}
 
+      <SessionResume />
       {/* MODE_PICKER_MARKER */}
       <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', bottom: 118, zIndex: 15, display: 'flex', gap: 8, padding: 6, borderRadius: 18, background: 'rgba(10,8,18,0.92)', backdropFilter: 'blur(14px)', border: '1px solid ' + warm + '33' }}>
         {[
@@ -216,7 +236,7 @@ export default function ChildMode() {
           { key: 'folklore', label: 'Folklore', emoji: '📜' },
           { key: 'funfact', label: 'Fun Facts', emoji: '🧠' },
           { key: 'own', label: 'Make Your Own', emoji: '🎨' },
-          { key: 'homework', label: 'Homework', emoji: '✏️' },
+          { key: 'homework', label: 'Homework Helper', emoji: '✏️' },
         ].filter((m) => !allowedModes || allowedModes.length === 0 || allowedModes.includes(m.key)).map((m) => (
           <button key={m.key} onClick={() => { if (m.key === 'homework') { setShowHomework(true); } else { setMode(m.key); } }} title={m.label}
             style={{
@@ -279,6 +299,7 @@ export default function ChildMode() {
         </button>
       </form>
 
+      {showHomework && <HomeworkHelper onClose={() => setShowHomework(false)} />}
       {showHistory && <BooksDrawer onClose={() => setShowHistory(false)} />}
 
       <style>{`
