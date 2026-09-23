@@ -4,6 +4,7 @@ import { useStudioStore } from '../../store/studioStore';
 import { playExclusive, stopAll } from '../../engine/audioQueue';
 import PageInfoPanel from './PageInfoPanel';
 import { tap as sTap, pageTurn as sPageTurn } from '../../engine/sound';
+import WonderBackground from '../Background/WonderBackground';
 
 const API = (import.meta.env.VITE_API_BASE || 'http://localhost:5000').replace(/\/$/, '');
 
@@ -22,6 +23,7 @@ function Page({ page, index, mood, isLatest }) {
   const [imageFailed, setImageFailed] = useState(false);
   const [hasPlayedOnce, setHasPlayedOnce] = useState(false);
   const audioRef = useRef(null);
+  // AUDIO_CLEANUP_REF
   const autoPlayTimer = useRef(null);
 
   const openSection = (kind) => { try { sTap(); } catch (e) {} setInfoSection(kind); setInfoOpen(true); };
@@ -166,6 +168,14 @@ export default function BookView() {
   const mood = useStudioStore((s) => s.mood);
   const scrollRef = useRef(null);
   const prevCount = useRef(pages.length);
+  // AUDIO_CLEANUP — stop any playing narration when leaving the book
+  useEffect(() => {
+    return () => {
+      try {
+        document.querySelectorAll('audio').forEach((a) => { try { a.pause(); a.currentTime = 0; } catch (e) {} });
+      } catch (e) {}
+    };
+  }, []);
 
   useEffect(() => {
     if (pages.length > prevCount.current && scrollRef.current) {
@@ -177,6 +187,7 @@ export default function BookView() {
   useEffect(() => () => stopAll(), []);
 
   return (
+    <WonderBackground variant="create">
     <div ref={scrollRef} style={{ position: 'absolute', inset: 0, overflowY: 'auto', background: 'var(--theme-bg)', paddingTop: 90, paddingBottom: 130, paddingLeft: 16, paddingRight: 16 }}>
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
         {pages.length === 0 && (
@@ -192,5 +203,6 @@ export default function BookView() {
       </div>
       <style>{`.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
+    </WonderBackground>
   );
 }
