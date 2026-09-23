@@ -19,7 +19,8 @@ export default function Sidebar({ activeTab, setActiveTab, currentUser, onOpenAu
   useEffect(() => { if (isMobile) setMobileOpen(false); }, [activeTab, isMobile]);
 
   const navItems = [
-    { id: 'landing', label: 'Home', icon: <Home size={18} /> },
+    { id: 'kid-home', label: 'My Space', icon: <Sparkles size={18} /> },
+    { id: 'landing', label: 'About', icon: <Home size={18} /> },
     { id: 'canvas', label: 'Create', icon: <Box size={18} /> },
     { id: 'games', label: 'Games', icon: <Gamepad2 size={18} /> },
     { id: 'inspiration', label: 'Sparks', icon: <Lightbulb size={18} /> },

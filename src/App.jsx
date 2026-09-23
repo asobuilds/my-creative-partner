@@ -24,6 +24,7 @@ import MemoryMatch from './components/Games/MemoryMatch';
 import OnboardingFlow from './components/onboarding/OnboardingFlow';
 import ParentDashboard from './components/ParentDashboard';
 import AutoGuide from './components/Guides/AutoGuide';
+import KidHome from './components/KidHome';
 
 // Minimal inline FAQ + Profile to fix missing imports
 function FAQView() {
@@ -60,7 +61,10 @@ const TAB_GUIDES = {
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('landing');
+  const [activeTab, setActiveTab] = useState(() => {
+    try { return useAccountStore.getState().getActiveChild && useAccountStore.getState().getActiveChild() ? 'kid-home' : 'landing'; }
+    catch (e) { return 'landing'; }
+  });
   const [currentUser, setCurrentUser] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [promptInput, setPromptInput] = useState('');
@@ -111,6 +115,9 @@ export default function App() {
         onToggleCollapse={() => setCollapsed((v) => !v)}
       />
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {activeTab === 'kid-home' && (
+          <KidHome onNavigate={(t) => setActiveTab(t)} />
+        )}
         {activeTab === 'landing' && (
           <LandingPage onLaunch={() => setActiveTab('canvas')} onOpenAuth={() => setIsAuthOpen(true)} />
         )}
